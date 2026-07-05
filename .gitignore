@@ -1,0 +1,13 @@
+# Local configuration secrets
+.env
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
