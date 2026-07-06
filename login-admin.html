@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Sign In — WellSpring Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="shell">
+
+    <div class="brand-panel">
+      <div class="brand-mark"><span aria-hidden="true">🌿</span> WellSpring Analytics</div>
+      <div class="brand-copy">
+        <span class="eyebrow">Admin sign in</span>
+        <h1>The full picture, one dashboard.</h1>
+        <p>Sign in to review team wellness trends and manage employee accounts.</p>
+      </div>
+      <div class="fine-print">Infosys Springboard · AIML Internship Project</div>
+      <svg class="breathing-rings" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="40"></circle>
+        <circle cx="100" cy="100" r="65"></circle>
+        <circle cx="100" cy="100" r="90"></circle>
+        <circle cx="100" cy="100" r="115"></circle>
+      </svg>
+    </div>
+
+    <div class="content-panel">
+      <div class="content-card">
+        <span class="step-label">Admin</span>
+        <h2>Sign in</h2>
+        <p class="subtitle">Use the admin ID you registered with.</p>
+
+        <div id="formAlert" class="alert-banner" role="alert"></div>
+
+        <form id="loginAdminForm" novalidate>
+
+          <div class="form-group">
+            <label for="adminId">Admin ID</label>
+            <div class="input-wrapper">
+              <input type="text" id="adminId" name="adminId" placeholder="e.g. admin_priya01" autocomplete="username" required />
+            </div>
+            <p class="field-error" id="adminIdError"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required />
+              <button type="button" class="toggle-eye" id="togglePassword" aria-label="Show password">Show</button>
+            </div>
+            <p class="field-error" id="passwordError"></p>
+          </div>
+
+          <div class="row-between">
+            <label class="checkbox-row">
+              <input type="checkbox" id="rememberMe" name="rememberMe" />
+              Remember me
+            </label>
+            <a href="forgot-password.html?role=admin">Forgot password?</a>
+          </div>
+
+          <!-- The Sign In button that submits the login form -->
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-text">Sign in</span>
+          </button>
+        </form>
+
+        <p class="footer-note">Don't have an account? <a href="register-admin.html">Sign up</a></p>
+        <p class="footer-note">Signing in as an employee instead? <a href="login-user.html">Go to employee sign in</a></p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/validation.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const form = document.getElementById("loginAdminForm");
+    const adminIdInput = document.getElementById("adminId");
+    const adminIdError = document.getElementById("adminIdError");
+    const passwordInput = document.getElementById("password");
+    const passwordError = document.getElementById("passwordError");
+    const rememberMe = document.getElementById("rememberMe");
+    const submitBtn = document.getElementById("submitBtn");
+    const formAlert = document.getElementById("formAlert");
+
+    attachShowHideToggle(document.getElementById("togglePassword"), passwordInput);
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      hideAlertBanner(formAlert);
+
+      const adminId = adminIdInput.value.trim();
+      const password = passwordInput.value;
+
+      let hasError = false;
+
+      if (!adminId) {
+        setFieldError(adminIdInput, adminIdError, "Admin ID is required.");
+        hasError = true;
+      } else {
+        setFieldError(adminIdInput, adminIdError, "");
+      }
+
+      if (!password) {
+        setFieldError(passwordInput, passwordError, "Password is required.");
+        hasError = true;
+      } else {
+        setFieldError(passwordInput, passwordError, "");
+      }
+
+      if (hasError) return;
+
+      setButtonLoading(submitBtn, true);
+      try {
+        const result = await loginAdmin({ adminId, password, rememberMe: rememberMe.checked });
+        persistSession(result.token, "admin");
+        showToast("Signed in successfully!", "success");
+        setTimeout(() => {
+          window.location.href = "admin-dashboard.html"; // build this in the next module
+        }, 900);
+      } catch (error) {
+        showAlertBanner(formAlert, error.message || "Invalid admin ID or password.");
+        showToast(error.message || "Invalid admin ID or password.", "error");
+      } finally {
+        setButtonLoading(submitBtn, false);
+      }
+    });
+  </script>
+
+</body>
+</html>

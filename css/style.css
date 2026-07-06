@@ -1,0 +1,603 @@
+/* =========================================================================
+   EMPLOYEE WELLNESS ANALYTICS — SHARED STYLESHEET
+   -------------------------------------------------------------------------
+   This one file styles every page (home, sign up, register, login, forgot
+   password). Reading order below:
+     1. Design tokens (colors, fonts, spacing) as CSS variables
+     2. Reset / base element styles
+     3. Layout shell (the two-column "split screen" every page uses)
+     4. The breathing-rings signature graphic (left panel)
+     5. Reusable components: buttons, cards, form fields, checklist,
+        password strength meter, toast notifications
+     6. Responsive rules (mobile)
+   ========================================================================= */
+
+/* ---------- 1. DESIGN TOKENS ---------------------------------------------
+   Centralizing colors/fonts as variables means if you (or your team) want
+   to re-theme the app later, you only change values here — not in every
+   page. */
+:root {
+  /* Wellness palette: deep teal = calm/trust, sage = growth, amber = energy */
+  --teal-900: #0f3d39;
+  --teal-700: #1b5e56;
+  --teal-600: #226b62;
+  --sage-200: #d9e8de;
+  --sage-100: #eef5f0;
+  --amber-500: #d9a441;
+  --amber-600: #b8872f;
+  --bg: #f6faf7;
+  --surface: #ffffff;
+  --text-900: #16241f;
+  --text-500: #5b6b64;
+  --text-muted: #8a9a93;
+  --border: #dde8e2;
+  --danger: #c2483c;
+  --danger-bg: #fbeae8;
+  --success: #2f7d5d;
+  --success-bg: #e8f4ee;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --shadow-card: 0 12px 32px rgba(15, 61, 57, 0.08);
+  --transition: 180ms ease;
+}
+
+/* ---------- 2. RESET / BASE ---------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-900);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--teal-900);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 16px;
+  color: var(--text-500);
+}
+
+a {
+  color: var(--teal-700);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Visible keyboard focus everywhere — accessibility floor, not optional */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--amber-500);
+  outline-offset: 2px;
+}
+
+/* Respect users who've asked for reduced motion at the OS level */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- 3. LAYOUT SHELL -----------------------------------------------
+   Every auth page uses the same two-column "shell": a left brand panel
+   (hidden on mobile) and a right panel holding the actual page content. */
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+
+.brand-panel {
+  background: linear-gradient(160deg, var(--teal-900), var(--teal-700));
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-panel .brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  z-index: 2;
+}
+
+.brand-panel .brand-copy {
+  z-index: 2;
+  max-width: 380px;
+}
+
+.brand-panel .brand-copy .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  color: var(--sage-200);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.brand-panel .brand-copy h1 {
+  color: #fff;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.brand-panel .brand-copy p {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.brand-panel .fine-print {
+  z-index: 2;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.content-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.content-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.content-card .step-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  color: var(--amber-600);
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.content-card h2 {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.content-card .subtitle {
+  margin-bottom: 28px;
+}
+
+/* ---------- 4. BREATHING RINGS (signature graphic) ------------------------
+   A set of concentric circles that gently expand and fade — a visual nod
+   to a guided breathing exercise. This is the one "signature" flourish;
+   everything else on the page stays quiet on purpose. */
+.breathing-rings {
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 380px;
+  height: 380px;
+  z-index: 1;
+  opacity: 0.9;
+}
+
+.breathing-rings circle {
+  fill: none;
+  stroke: rgba(217, 164, 65, 0.35);
+  stroke-width: 1.5;
+  transform-origin: center;
+  animation: breathe 6s ease-in-out infinite;
+}
+
+.breathing-rings circle:nth-child(2) { animation-delay: 1.2s; stroke: rgba(255,255,255,0.18); }
+.breathing-rings circle:nth-child(3) { animation-delay: 2.4s; stroke: rgba(217, 164, 65, 0.22); }
+.breathing-rings circle:nth-child(4) { animation-delay: 3.6s; stroke: rgba(255,255,255,0.12); }
+
+@keyframes breathe {
+  0%   { transform: scale(0.85); opacity: 0.15; }
+  50%  { transform: scale(1.05); opacity: 0.7; }
+  100% { transform: scale(0.85); opacity: 0.15; }
+}
+
+/* ---------- 5. COMPONENTS -------------------------------------------------- */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--teal-700);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--teal-900);
+}
+
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--teal-700);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--teal-700);
+  background: var(--sage-100);
+}
+
+/* Choice cards (used on home, sign-up-role, login-role pages) */
+.choice-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.choice-card {
+  display: block;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.choice-card:hover {
+  border-color: var(--teal-600);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+.choice-card .choice-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--sage-100);
+  color: var(--teal-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.choice-card h3 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+.choice-card p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Form fields */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-900);
+  margin-bottom: 6px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--text-900);
+  transition: border-color var(--transition);
+}
+
+.input-wrapper input:focus {
+  border-color: var(--teal-600);
+}
+
+.input-wrapper input.field-invalid {
+  border-color: var(--danger);
+}
+
+.input-wrapper input.field-valid {
+  border-color: var(--success);
+}
+
+.input-wrapper .toggle-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px;
+  width: auto;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.field-error {
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 6px;
+  display: none;
+}
+
+.field-error.visible {
+  display: block;
+}
+
+/* Password strength meter */
+.strength-meter {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.strength-meter .bar {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+.strength-label {
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.strength-weak .bar:nth-child(1) { background: var(--danger); }
+.strength-weak .strength-label { color: var(--danger); }
+
+.strength-medium .bar:nth-child(1),
+.strength-medium .bar:nth-child(2) { background: var(--amber-600); }
+.strength-medium .strength-label { color: var(--amber-600); }
+
+.strength-strong .bar { background: var(--success); }
+.strength-strong .strength-label { color: var(--success); }
+
+/* Password requirement checklist */
+.checklist {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.checklist li .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.checklist li.met {
+  color: var(--success);
+}
+
+.checklist li.met .dot {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+/* Row helpers */
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  width: auto;
+  margin: 0;
+}
+
+.divider-text {
+  text-align: center;
+  margin: 20px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.footer-note {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+}
+
+/* Toast notifications */
+.toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 999;
+}
+
+.toast {
+  min-width: 260px;
+  max-width: 340px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  font-size: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: toast-in 220ms ease;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.toast.toast-success { border-left: 4px solid var(--success); }
+.toast.toast-error { border-left: 4px solid var(--danger); }
+
+/* Alert banner used for inline form-level errors/success */
+.alert-banner {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 18px;
+  display: none;
+}
+
+.alert-banner.visible {
+  display: block;
+}
+
+.alert-banner.alert-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.alert-banner.alert-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+/* Spinner shown inside the submit button while a request is pending */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+  display: none;
+}
+
+.btn.is-loading .spinner {
+  display: inline-block;
+}
+
+.btn.is-loading .btn-text {
+  opacity: 0.7;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- 6. RESPONSIVE -------------------------------------------------- */
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    padding: 32px 24px;
+    min-height: 220px;
+  }
+
+  .brand-panel .brand-copy h1 {
+    font-size: 26px;
+  }
+
+  .content-panel {
+    padding: 32px 20px 48px;
+  }
+
+  .checklist {
+    grid-template-columns: 1fr;
+  }
+}
