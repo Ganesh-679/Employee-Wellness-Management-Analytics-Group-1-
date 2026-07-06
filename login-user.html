@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Sign In — WellSpring Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="shell">
+
+    <div class="brand-panel">
+      <div class="brand-mark"><span aria-hidden="true">🌿</span> WellSpring Analytics</div>
+      <div class="brand-copy">
+        <span class="eyebrow">Employee sign in</span>
+        <h1>A minute a day is all it takes.</h1>
+        <p>Sign in to log today's check-in and see your personal wellness trends.</p>
+      </div>
+      <div class="fine-print">Infosys Springboard · AIML Internship Project</div>
+      <svg class="breathing-rings" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="40"></circle>
+        <circle cx="100" cy="100" r="65"></circle>
+        <circle cx="100" cy="100" r="90"></circle>
+        <circle cx="100" cy="100" r="115"></circle>
+      </svg>
+    </div>
+
+    <div class="content-panel">
+      <div class="content-card">
+        <span class="step-label">Employee</span>
+        <h2>Sign in</h2>
+        <p class="subtitle">Use the work email you registered with.</p>
+
+        <div id="formAlert" class="alert-banner" role="alert"></div>
+
+        <form id="loginUserForm" novalidate>
+
+          <div class="form-group">
+            <label for="email">Work email</label>
+            <div class="input-wrapper">
+              <input type="email" id="email" name="email" placeholder="you@company.com" autocomplete="email" required />
+            </div>
+            <p class="field-error" id="emailError"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required />
+              <button type="button" class="toggle-eye" id="togglePassword" aria-label="Show password">Show</button>
+            </div>
+            <p class="field-error" id="passwordError"></p>
+          </div>
+
+          <div class="row-between">
+            <label class="checkbox-row">
+              <input type="checkbox" id="rememberMe" name="rememberMe" />
+              Remember me
+            </label>
+            <a href="forgot-password.html?role=user">Forgot password?</a>
+          </div>
+
+          <!-- The Sign In button that submits the login form -->
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-text">Sign in</span>
+          </button>
+        </form>
+
+        <p class="footer-note">Don't have an account? <a href="register-user.html">Sign up</a></p>
+        <p class="footer-note">Signing in as an admin instead? <a href="login-admin.html">Go to admin sign in</a></p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/validation.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const form = document.getElementById("loginUserForm");
+    const emailInput = document.getElementById("email");
+    const emailError = document.getElementById("emailError");
+    const passwordInput = document.getElementById("password");
+    const passwordError = document.getElementById("passwordError");
+    const rememberMe = document.getElementById("rememberMe");
+    const submitBtn = document.getElementById("submitBtn");
+    const formAlert = document.getElementById("formAlert");
+
+    attachShowHideToggle(document.getElementById("togglePassword"), passwordInput);
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      hideAlertBanner(formAlert);
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      let hasError = false;
+
+      if (!isValidEmail(email)) {
+        setFieldError(emailInput, emailError, "Enter a valid email address.");
+        hasError = true;
+      } else {
+        setFieldError(emailInput, emailError, "");
+      }
+
+      if (!password) {
+        setFieldError(passwordInput, passwordError, "Password is required.");
+        hasError = true;
+      } else {
+        setFieldError(passwordInput, passwordError, "");
+      }
+
+      if (hasError) return;
+
+      setButtonLoading(submitBtn, true);
+      try {
+        const result = await loginUser({ email, password, rememberMe: rememberMe.checked });
+        persistSession(result.token, "user");
+        showToast("Signed in successfully!", "success");
+        setTimeout(() => {
+          window.location.href = "dashboard.html"; // build this in the next module
+        }, 900);
+      } catch (error) {
+        showAlertBanner(formAlert, error.message || "Invalid email or password.");
+        showToast(error.message || "Invalid email or password.", "error");
+      } finally {
+        setButtonLoading(submitBtn, false);
+      }
+    });
+  </script>
+
+</body>
+</html>
