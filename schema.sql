@@ -1,5 +1,5 @@
 -- =========================================================================
--- schema.sql
+-- schema.sql (SQLite version)
 -- -------------------------------------------------------------------------
 -- SQL definitions for the WellSpring Analytics database schema.
 -- This sets up the structure required by the login/registration API endpoints.
@@ -7,28 +7,28 @@
 
 -- 1. Users (Employees) Table
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Admins Table
 CREATE TABLE IF NOT EXISTS admins (
-    id SERIAL PRIMARY KEY,
-    admin_id VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 3. Password Reset Tokens Table
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    id SERIAL PRIMARY KEY,
-    identifier VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('user', 'admin')),
-    otp_code VARCHAR(10) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    identifier TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'admin')),
+    otp_code TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
-    used BOOLEAN DEFAULT FALSE,
+    used BOOLEAN DEFAULT 0, -- SQLite uses 0/1 for booleans
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

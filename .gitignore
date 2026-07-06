@@ -1,5 +1,6 @@
 # Local configuration secrets
 .env
+wellness.db
 
 # Python build artifacts
 __pycache__/

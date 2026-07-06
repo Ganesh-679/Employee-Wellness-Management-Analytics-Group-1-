@@ -1,28 +1,26 @@
-# WellSpring Analytics — Backend Development & DB Integration Guide
+# WellSpring Analytics — Backend Development & DB Integration Guide (SQLite)
 
-This guide is for the backend development team. It explains how to set up the PostgreSQL database locally and lists the API specifications and business logic required to connect the frontend pages to the database.
+This guide is for the backend development team. It explains how to set up the SQLite database locally and lists the API specifications and business logic required to connect the frontend pages to the database.
 
 ---
 
 ## 1. Local Database Setup
 
-To set up the database on your local machine, follow these steps:
+Because this project uses SQLite, there is no need to install or run a separate database server (like PostgreSQL or MySQL). The database exists as a single file (`wellness.db`) in the project directory.
+
+To set up the database locally:
 
 1. **Install dependencies**:
-   Run the following command to install the required PostgreSQL Python driver and env helper:
+   Run the following command to install the environment helper:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure your environment**:
+2. **Configure your environment (Optional)**:
    * Copy the template file `.env.example` to a new file named `.env`.
-   * Open `.env` and fill in your local PostgreSQL username, port, and password:
+   * By default, the database file will be created as `wellness.db` in the root of the project. If you wish to change the filename, set the `DB_FILE` variable in `.env`:
      ```env
-     DB_HOST=localhost
-     DB_PORT=5432
-     DB_USER=postgres
-     DB_PASSWORD=your_actual_postgres_password
-     DB_NAME=wellness_db
+     DB_FILE=wellness.db
      ```
 
 3. **Initialize the Database**:
@@ -30,7 +28,7 @@ To set up the database on your local machine, follow these steps:
    ```bash
    python setup_db.py
    ```
-   This script will connect to your local PostgreSQL instance, create the `wellness_db` database if it doesn't exist, and build all the required tables and indexes.
+   This script will read `schema.sql` and create the SQLite database file (`wellness.db`) and all required tables and indexes.
 
 ---
 
@@ -39,30 +37,30 @@ To set up the database on your local machine, follow these steps:
 The tables created in the database are:
 
 ### `users` (Employees)
-| Column | PostgreSQL Type | Constraints | Purpose |
+| Column | SQLite Type | Constraints | Purpose |
 | :--- | :--- | :--- | :--- |
-| `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier |
-| `email` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | User's work email |
-| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Hashed password (never plain text) |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique identifier |
+| `email` | `TEXT` | `NOT NULL UNIQUE` | User's work email |
+| `password_hash` | `TEXT` | `NOT NULL` | Hashed password (never plain text) |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Signup timestamp |
 
 ### `admins` (Administrators)
-| Column | PostgreSQL Type | Constraints | Purpose |
+| Column | SQLite Type | Constraints | Purpose |
 | :--- | :--- | :--- | :--- |
-| `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier |
-| `admin_id` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | Admin's login ID |
-| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Hashed password (never plain text) |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique identifier |
+| `admin_id` | `TEXT` | `NOT NULL UNIQUE` | Admin's login ID |
+| `password_hash` | `TEXT` | `NOT NULL` | Hashed password (never plain text) |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Signup timestamp |
 
 ### `password_reset_tokens` (OTP codes)
-| Column | PostgreSQL Type | Constraints | Purpose |
+| Column | SQLite Type | Constraints | Purpose |
 | :--- | :--- | :--- | :--- |
-| `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier |
-| `identifier` | `VARCHAR(255)` | `NOT NULL` | Email or Admin ID |
-| `role` | `VARCHAR(50)` | `NOT NULL` (Value must be `'user'` or `'admin'`) | Identifies which table to check |
-| `otp_code` | `VARCHAR(10)` | `NOT NULL` | One-time code sent to user |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique identifier |
+| `identifier` | `TEXT` | `NOT NULL` | Email or Admin ID |
+| `role` | `TEXT` | `NOT NULL CHECK (role IN ('user', 'admin'))` | Identifies which table to check |
+| `otp_code` | `TEXT` | `NOT NULL` | One-time code sent to user |
 | `expires_at` | `TIMESTAMP` | `NOT NULL` | Code expiration time (e.g. +10 mins) |
-| `used` | `BOOLEAN` | `DEFAULT FALSE` | Prevents code reuse |
+| `used` | `BOOLEAN` | `DEFAULT 0` | Prevents code reuse (0=False, 1=True) |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Generation timestamp |
 
 ---
@@ -125,15 +123,15 @@ The frontend makes JSON POST requests to `http://localhost:5000/api`. Your backe
 * **Payload**: `{ "identifier": "user@company.com", "role": "user", "otp": "123456", "newPassword": "NewPassword@123" }`
 * **Logic**:
   1. Query `password_reset_tokens` for the newest, unused token matching the `identifier` and `role`.
-  2. Verify if the token matches `otp` and `expires_at > CURRENT_TIMESTAMP`. If expired/used/wrong, return `400 Bad Request` (`{ "message": "Invalid or expired verification code" }`).
+  2. Verify if the token matches `otp` and `expires_at > datetime('now', 'localtime')`. If expired/used/wrong, return `400 Bad Request` (`{ "message": "Invalid or expired verification code" }`).
   3. Hash `newPassword` and update the record in the `users` or `admins` table.
-  4. Mark the token as `used = TRUE` in the `password_reset_tokens` table.
+  4. Mark the token as `used = 1` in the `password_reset_tokens` table.
 * **Success Response**: `200 OK` (`{ "message": "Password reset successfully" }`)
 
 ---
 
-## 4. Key Security Implementation Notes
+## 4. Key Implementation Notes
 
 1. **Password Security**: Never write or store passwords in plain text. Always run passwords through a robust hashing function like **bcrypt** or **argon2** before inserting them.
 2. **CORS Configuration**: Since the frontend is run via `file://` or a separate static server (e.g., Live Server on `http://127.0.0.1:5500`), ensure **CORS** (Cross-Origin Resource Sharing) is enabled in your backend framework (e.g., `flask-cors` for Python Flask or `cors` middleware for Node.js Express).
-3. **Validation Double-check**: The frontend validates input, but client-side checks can be bypassed. Ensure your backend re-validates the fields (email format, password complexity rules).
+3. **Database File Handling**: Since SQLite locks the database file during write operations, make sure to close cursor and connection objects properly in your backend routes.
