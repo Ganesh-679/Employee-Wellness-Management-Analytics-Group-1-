@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+.env
+wellness.db
+# Local configuration secrets
+.env
+wellness.db
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
