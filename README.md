@@ -1,3 +1,395 @@
+# 🔐 Google Authenticator (2FA) Integration
+
+**Feature Developed by:** Ganesh
+
+This branch adds **Google Authenticator based Two-Factor Authentication (2FA)** to the Employee Wellness Management Analytics project.
+
+The existing Login and Registration module has been enhanced with an extra security layer using Time-based One-Time Passwords (TOTP).
+
+---
+
+# ✨ New Features Added
+
+## Employee
+
+✅ Register Employee
+
+✅ Login Employee
+
+✅ Google Authenticator QR Code
+
+✅ Verify 6-digit Authentication Code
+
+✅ Secure Login
+
+---
+
+## Admin
+
+✅ Register Admin
+
+✅ Login Admin
+
+✅ Google Authenticator QR Code
+
+✅ Verify 6-digit Authentication Code
+
+✅ Secure Login
+
+---
+
+# 🔄 Authentication Flow
+
+## Employee
+
+Register
+↓
+Generate Secret Key
+↓
+Generate QR Code
+↓
+Scan QR using Google Authenticator
+↓
+Login with Email + Password
+↓
+Enter 6-digit Code
+↓
+JWT Token Generated
+↓
+Dashboard
+
+---
+
+## Admin
+
+Register
+↓
+Generate Secret Key
+↓
+Generate QR Code
+↓
+Scan QR using Google Authenticator
+↓
+Login using Admin ID + Password
+↓
+Enter 6-digit Code
+↓
+JWT Token Generated
+↓
+Dashboard
+
+---
+
+# 📂 New Files Added
+
+Frontend
+
+verify-2fa.html
+
+verify-2fa-admin.html
+
+Updated
+
+login-user.html
+
+login-admin.html
+
+register-user.html
+
+register-admin.html
+
+js/auth.js
+
+Backend
+
+routes/user.py
+
+routes/admin.py
+
+models.py
+
+config.py
+
+utils.py
+
+requirements.txt
+
+---
+
+# 📦 New Python Packages
+
+Install these packages before running the project.
+
+```bash
+pip install pyotp
+pip install qrcode
+pip install pillow
+```
+
+Or simply install everything
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# 📱 Install Google Authenticator
+
+## Android
+
+Download from Google Play Store
+
+Google Authenticator
+
+https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2
+
+---
+
+## iPhone
+
+Download from Apple App Store
+
+Google Authenticator
+
+https://apps.apple.com/app/google-authenticator/id388497605
+
+---
+
+# 🚀 How to Run
+
+## 1 Clone Repository
+
+```bash
+git clone <repository-url>
+```
+
+---
+
+## 2 Open Project
+
+```bash
+cd Employee-Wellness-Management-Analytics
+```
+
+---
+
+## 3 Create Virtual Environment
+
+Windows
+
+```bash
+python -m venv venv
+```
+
+Activate
+
+```bash
+venv\Scripts\activate
+```
+
+---
+
+## 4 Install Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 5 Create Database
+
+```bash
+python setup_db.py
+```
+
+---
+
+## 6 Start Flask Server
+
+```bash
+python app.py
+```
+
+Server
+
+```
+http://localhost:5000
+```
+
+---
+
+# 👨‍💻 How to Register
+
+Employee
+
+Open
+
+```
+register-user.html
+```
+
+Fill
+
+Email
+
+Password
+
+Confirm Password
+
+Click Register
+
+A QR Code will appear.
+
+---
+
+Admin
+
+Open
+
+```
+register-admin.html
+```
+
+Fill
+
+Admin ID
+
+Password
+
+Confirm Password
+
+Click Register
+
+A QR Code will appear.
+
+---
+
+# 📲 Scan QR Code
+
+Open
+
+Google Authenticator
+
+↓
+
+Tap
+
++
+
+↓
+
+Scan QR Code
+
+↓
+
+A new account will be added.
+
+Example
+
+```
+Employee Wellness
+```
+
+or
+
+```
+Admin Wellness
+```
+
+---
+
+# 🔐 Login Process
+
+Login normally.
+
+Enter
+
+Email/Admin ID
+
+Password
+
+↓
+
+Click Login
+
+↓
+
+verify-2fa page opens
+
+↓
+
+Open Google Authenticator
+
+↓
+
+Copy the 6-digit code
+
+↓
+
+Enter Code
+
+↓
+
+Click Verify
+
+↓
+
+Login Successful
+
+---
+
+# ⚠ Important Notes
+
+The 6-digit code changes every 30 seconds.
+
+Each code can be used only during its validity period.
+
+Do not share your Secret Key or QR Code.
+
+Every registered user must scan the QR Code once during registration.
+
+Without Google Authenticator, login is not possible.
+
+---
+
+# 🛠 Technologies Used
+
+Python
+
+Flask
+
+Flask JWT
+
+Flask SQLAlchemy
+
+Flask Bcrypt
+
+SQLite
+
+PyOTP
+
+QRCode
+
+Pillow
+
+HTML
+
+CSS
+
+JavaScript
+
+---
+
+# 👨‍💻 Developed By
+
+Ganesh
+
+Infosys Springboard AIML Internship
+
+Employee Wellness Management Analytics Project
+
 # Employee Wellness Management — Backend (Login & Registration)
 
 Flask backend built to match the frontend's `API_ENDPOINTS.md` exactly —
