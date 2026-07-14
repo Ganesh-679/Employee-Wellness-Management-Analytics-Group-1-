@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Employee Wellness Management Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 250px; flex-shrink: 0; background: var(--teal-900, #10302c); color: #fff;
+      display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar .brand { font-family: "Fraunces", serif; font-size: 16px; padding: 0 22px 20px; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 12px; }
+    .sidebar nav { flex: 1; overflow-y: auto; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+      background: none; border: none; color: rgba(255,255,255,0.72); font-size: 14px;
+      padding: 11px 22px; cursor: pointer; font-family: inherit;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 600; border-left: 3px solid #a9d0b8; }
+    .nav-item.disabled { cursor: not-allowed; opacity: 0.42; }
+    .nav-item.disabled:hover { background: none; color: rgba(255,255,255,0.72); }
+    .nav-item .soon { font-size: 10px; margin-left: auto; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sidebar-footer { padding: 14px 22px 0; border-top: 1px solid rgba(255,255,255,0.12); margin-top: 12px; }
+    .sidebar-footer button { width: 100%; }
+    .main { flex: 1; padding: 40px 36px 80px; max-width: 920px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .view-header { margin-bottom: 24px; }
+    .view-header h1 { font-family: "Fraunces", serif; font-size: 26px; margin: 0 0 6px; }
+    .view-header p { margin: 0; color: var(--ink-muted); }
+    .panel { background: var(--surface, #fff); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 20px; }
+    table.records-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.records-table th, table.records-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+    table.records-table th { color: var(--ink-muted); font-weight: 600; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .badge-valid { background: rgba(46, 160, 90, 0.12); color: var(--success, #2ea05a); }
+    .badge-flagged { background: rgba(217, 119, 6, 0.14); color: var(--amber-600, #d97706); }
+    .flag-list { margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: var(--amber-600, #d97706); }
+    .row-actions button { background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 12px; text-decoration: underline; padding: 0; margin-right: 10px; }
+    .empty-state { color: var(--ink-muted); font-size: 14px; padding: 12px 0; }
+    .coming-soon { color: var(--ink-muted); font-size: 14px; padding: 30px 0; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">Employee Wellness Analytics</div>
+    <nav id="sidebarNav">
+      <button class="nav-item active" data-view="personalInfoView" type="button">Personal Information</button>
+      <button class="nav-item" data-view="healthDataView" type="button">Health Data</button>
+      <button class="nav-item" data-view="reportsView" type="button">
+    Medical Reports
+</button>
+<button class="nav-item" data-view="riskView" type="button">
+    Wellness Risk Prediction
+</button>      
+<button class="nav-item disabled" data-view="recommendationsView" type="button">Wellness Recommendations <span class="soon">Soon</span></button>
+      <button class="nav-item disabled" data-view="sentimentView" type="button">Mental Health &amp; Sentiment <span class="soon">Soon</span></button>
+      <button class="nav-item disabled" data-view="chatbotView" type="button">Wellness Chatbot <span class="soon">Soon</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary" id="logoutBtn" type="button">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <section class="view active" id="personalInfoView">
+      <div class="view-header">
+        <h1>Personal Information</h1>
+        <p>Your role at the company — used across the wellness modules.</p>
+      </div>
+      <div class="panel">
+        <div id="profileAlert" class="field-error"></div>
+        <form id="profileForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="fullName">Full name</label>
+              <div class="input-wrapper"><input type="text" id="fullName" required /></div>
+            </div>
+            <div class="form-group">
+              <label for="employeeCode">Employee ID (optional)</label>
+              <div class="input-wrapper"><input type="text" id="employeeCode" /></div>
+            </div>
+            <div class="form-group">
+              <label for="designation">Role / designation</label>
+              <div class="input-wrapper"><input type="text" id="designation" placeholder="e.g. Software Engineer" /></div>
+            </div>
+            <div class="form-group">
+              <label for="department">Department</label>
+              <div class="input-wrapper">
+                <select id="department">
+                  <option value="">Select…</option>
+                  <option>Engineering</option>
+                  <option>HR</option>
+                  <option>Finance</option>
+                  <option>Sales</option>
+                  <option>Marketing</option>
+                  <option>Operations</option>
+                  <option>Support</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="dateOfJoining">Date of joining</label>
+              <div class="input-wrapper"><input type="date" id="dateOfJoining" /></div>
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone (optional)</label>
+              <div class="input-wrapper"><input type="text" id="phone" placeholder="+91 90000 00000" /></div>
+            </div>
+            <div class="form-group">
+              <label for="workLocation">Work location</label>
+              <div class="input-wrapper"><input type="text" id="workLocation" placeholder="e.g. Bengaluru / Remote" /></div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="profileSubmitBtn">Save profile</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="view" id="healthDataView">
+      <div class="view-header">
+        <h1>My Wellness Check-in</h1>
+        <p>Log today's health snapshot — BMI, exercise, sleep, attendance, and any check-up notes.</p>
+      </div>
+
+      <div class="panel">
+        <h2 style="margin-top:0;">New entry</h2>
+        <div id="formAlert" class="field-error"></div>
+        <form id="healthForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="recordDate">Date</label>
+              <div class="input-wrapper"><input type="date" id="recordDate" required /></div>
+            </div>
+            <div class="form-group">
+              <label for="heightCm">Height (cm)</label>
+              <div class="input-wrapper"><input type="number" step="0.1" id="heightCm" placeholder="170" required /></div>
+            </div>
+            <div class="form-group">
+              <label for="weightKg">Weight (kg)</label>
+              <div class="input-wrapper"><input type="number" step="0.1" id="weightKg" placeholder="68" required /></div>
+            </div>
+            <div class="form-group">
+              <label for="sleepHours">Sleep (hrs/night avg)</label>
+              <div class="input-wrapper"><input type="number" step="0.1" id="sleepHours" placeholder="7" required /></div>
+            </div>
+            <div class="form-group">
+              <label for="exerciseFrequency">Exercise habit</label>
+              <div class="input-wrapper">
+                <select id="exerciseFrequency" required>
+                  <option value="">Select…</option>
+                  <option value="Sedentary">Sedentary</option>
+                  <option value="Light">Light</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="Active">Active</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="exerciseMinutesPerWeek">Exercise (min/week)</label>
+              <div class="input-wrapper"><input type="number" id="exerciseMinutesPerWeek" placeholder="150" /></div>
+            </div>
+            <div class="form-group">
+              <label for="waterIntakeLiters">Water intake (L/day)</label>
+              <div class="input-wrapper"><input type="number" step="0.1" id="waterIntakeLiters" placeholder="2.5" /></div>
+            </div>
+            <div class="form-group">
+              <label for="bpSystolic">Blood pressure — systolic</label>
+              <div class="input-wrapper"><input type="number" id="bpSystolic" placeholder="120" /></div>
+            </div>
+            <div class="form-group">
+              <label for="bpDiastolic">Blood pressure — diastolic</label>
+              <div class="input-wrapper"><input type="number" id="bpDiastolic" placeholder="80" /></div>
+            </div>
+            <div class="form-group">
+              <label for="restingHeartRate">Resting heart rate (bpm)</label>
+              <div class="input-wrapper"><input type="number" id="restingHeartRate" placeholder="72" /></div>
+            </div>
+            <div class="form-group">
+              <label for="stressLevel">Stress level</label>
+              <div class="input-wrapper">
+                <select id="stressLevel">
+                  <option value="">Select…</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="smokingStatus">Smoking status</label>
+              <div class="input-wrapper">
+                <select id="smokingStatus">
+                  <option value="">Select…</option>
+                  <option value="Never">Never</option>
+                  <option value="Former">Former</option>
+                  <option value="Current">Current</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="alcoholConsumption">Alcohol consumption</label>
+              <div class="input-wrapper">
+                <select id="alcoholConsumption">
+                  <option value="">Select…</option>
+                  <option value="None">None</option>
+                  <option value="Occasional">Occasional</option>
+                  <option value="Regular">Regular</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="attendanceStatus">Attendance today</label>
+              <div class="input-wrapper">
+                <select id="attendanceStatus" required>
+                  <option value="">Select…</option>
+                  <option value="Present">Present</option>
+                  <option value="WFH">Work from home</option>
+                  <option value="Leave">On leave</option>
+                  <option value="Absent">Absent</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="checkupDate">Last check-up date (optional)</label>
+              <div class="input-wrapper"><input type="date" id="checkupDate" /></div>
+            </div>
+            <div class="form-group">
+              <label for="checkupResult">Check-up result (optional)</label>
+              <div class="input-wrapper">
+                <select id="checkupResult">
+                  <option value="">N/A</option>
+                  <option value="Normal">Normal</option>
+                  <option value="NeedsAttention">Needs attention</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="checkupNotes">Check-up notes (optional)</label>
+            <div class="input-wrapper"><input type="text" id="checkupNotes" placeholder="e.g. Annual physical — cholesterol slightly high" /></div>
+          </div>
+          <div class="form-group">
+            <label for="assessmentNotes">Self-assessment (optional)</label>
+            <div class="input-wrapper"><input type="text" id="assessmentNotes" placeholder="How are you feeling overall this week?" /></div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Save entry</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2 style="margin-top:0;">My history</h2>
+        <div id="recordsContainer"><p class="empty-state">Loading…</p></div>
+      </div>
+    </section>
+    <section class="view" id="reportsView">
+
+    <div class="view-header">
+        <h1>Medical Reports</h1>
+        <p>Upload and manage your medical reports.</p>
+    </div>
+
+    <div class="panel">
+
+        <form id="reportForm">
+
+            <div class="form-group">
+
+                <label>Report Name</label>
+
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="reportName"
+                        placeholder="Blood Test Report"
+                        required>
+                </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Report Type</label>
+
+                <div class="input-wrapper">
+
+                    <select id="reportType">
+
+                        <option>Blood Test</option>
+                        <option>X-Ray</option>
+                        <option>ECG</option>
+                        <option>Prescription</option>
+                        <option>Medical Report</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Select File</label>
+
+                <div class="input-wrapper">
+
+                    <input
+                        type="file"
+                        id="reportFile"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        required>
+
+                </div>
+
+            </div>
+
+            <button
+                class="btn btn-primary"
+                type="submit">
+
+                Upload Report
+
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Uploaded Reports</h2>
+
+        <div id="reportList">
+
+            No Reports Uploaded
+
+        </div>
+
+    </div>
+
+</section>
+
+    <section class="view" id="riskView">
+
+<div class="view-header">
+<h1>Wellness Risk Prediction</h1>
+<p>AI predicts your current wellness risk.</p>
+</div>
+
+<div class="panel">
+
+<h2>Prediction Result</h2>
+
+<div id="riskResult">
+
+<p>Click Refresh Prediction.</p>
+
+</div>
+
+<br>
+
+<button
+class="btn btn-primary"
+id="predictRiskBtn">
+
+Refresh Prediction
+
+</button>
+
+</div>
+
+</section>
+    <section class="view" id="recommendationsView">
+      <div class="view-header"><h1>Personalized Wellness Recommendations</h1></div>
+      <div class="panel"><p class="coming-soon">Module 3 — coming soon.</p></div>
+    </section>
+    <section class="view" id="sentimentView">
+      <div class="view-header"><h1>Mental Health &amp; Sentiment Analytics</h1></div>
+      <div class="panel"><p class="coming-soon">Module 4 — coming soon.</p></div>
+    </section>
+    <section class="view" id="chatbotView">
+      <div class="view-header"><h1>AI Wellness Chatbot &amp; Engagement</h1></div>
+      <div class="panel"><p class="coming-soon">Module 6 — coming soon.</p></div>
+    </section>
+
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/health.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/risk.js"></script>
+  <script>
+    (function () {
+      const token = sessionStorage.getItem("wellness_token");
+      const role = sessionStorage.getItem("wellness_role");
+      if (!token || role !== "user") {
+        window.location.href = "login-user.html";
+        return;
+      }
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        sessionStorage.removeItem("wellness_token");
+        sessionStorage.removeItem("wellness_role");
+        window.location.href = "login.html";
+      });
+
+      document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.classList.contains("disabled")) return;
+          document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
+          document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById(btn.dataset.view).classList.add("active");
+        });
+      });
+
+      const profileForm = document.getElementById("profileForm");
+      const profileAlert = document.getElementById("profileAlert");
+      const profileSubmitBtn = document.getElementById("profileSubmitBtn");
+
+      async function loadProfile() {
+        try {
+          const data = await getProfile(token);
+          if (data.profile) {
+            document.getElementById("fullName").value = data.profile.fullName || "";
+            document.getElementById("employeeCode").value = data.profile.employeeCode || "";
+            document.getElementById("designation").value = data.profile.designation || "";
+            document.getElementById("department").value = data.profile.department || "";
+            document.getElementById("dateOfJoining").value = data.profile.dateOfJoining || "";
+            document.getElementById("phone").value = data.profile.phone || "";
+            document.getElementById("workLocation").value = data.profile.workLocation || "";
+          }
+        } catch (err) {
+          showAlertBanner(profileAlert, err.message, "error");
+        }
+      }
+
+      profileForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideAlertBanner(profileAlert);
+        setButtonLoading(profileSubmitBtn, true);
+
+        const payload = {
+          fullName: document.getElementById("fullName").value,
+          employeeCode: document.getElementById("employeeCode").value,
+          designation: document.getElementById("designation").value,
+          department: document.getElementById("department").value,
+          dateOfJoining: document.getElementById("dateOfJoining").value || null,
+          phone: document.getElementById("phone").value,
+          workLocation: document.getElementById("workLocation").value,
+        };
+
+        try {
+          await saveProfile(payload, token);
+          showToast("Profile saved", "success");
+        } catch (err) {
+          showAlertBanner(profileAlert, err.message, "error");
+        } finally {
+          setButtonLoading(profileSubmitBtn, false);
+        }
+      });
+
+      const form = document.getElementById("healthForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const formAlert = document.getElementById("formAlert");
+      const recordsContainer = document.getElementById("recordsContainer");
+
+      function renderRecords(records) {
+        if (!records.length) {
+          recordsContainer.innerHTML = '<p class="empty-state">No entries yet — add your first check-in above.</p>';
+          return;
+        }
+        const rows = records.map((r) => {
+          const badgeClass = r.validationStatus === "flagged" ? "badge-flagged" : "badge-valid";
+          const flags = (r.validationFlags || []).map((f) => `<li>${f}</li>`).join("");
+          const bp = (r.bpSystolic && r.bpDiastolic) ? `${r.bpSystolic}/${r.bpDiastolic}` : "—";
+          return `
+            <tr>
+              <td>${r.recordDate}</td>
+              <td>${r.bmi} <span style="color:var(--ink-muted)">(${r.bmiCategory})</span></td>
+              <td>${r.exerciseFrequency}</td>
+              <td>${r.sleepHours}h</td>
+              <td>${bp}</td>
+              <td>${r.stressLevel || "—"}</td>
+              <td>${r.attendanceStatus}</td>
+              <td>
+                <span class="badge ${badgeClass}">${r.validationStatus}</span>
+                ${flags ? `<ul class="flag-list">${flags}</ul>` : ""}
+              </td>
+              <td class="row-actions"><button data-id="${r.id}" class="deleteBtn">Delete</button></td>
+            </tr>`;
+        }).join("");
+
+        recordsContainer.innerHTML = `
+          <table class="records-table">
+            <thead>
+              <tr><th>Date</th><th>BMI</th><th>Exercise</th><th>Sleep</th><th>BP</th><th>Stress</th><th>Attendance</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+
+        recordsContainer.querySelectorAll(".deleteBtn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            try {
+              await deleteHealthRecord(btn.dataset.id, token);
+              showToast("Entry deleted", "success");
+              loadRecords();
+            } catch (err) {
+              showToast(err.message, "error");
+            }
+          });
+        });
+      }
+
+      async function loadRecords() {
+        try {
+          const data = await listHealthRecords(token);
+          renderRecords(data.records);
+        } catch (err) {
+          recordsContainer.innerHTML = `<p class="empty-state">Couldn't load your history: ${err.message}</p>`;
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideAlertBanner(formAlert);
+        setButtonLoading(submitBtn, true);
+
+        const payload = {
+          recordDate: document.getElementById("recordDate").value,
+          heightCm: document.getElementById("heightCm").value,
+          weightKg: document.getElementById("weightKg").value,
+          sleepHours: document.getElementById("sleepHours").value,
+          exerciseFrequency: document.getElementById("exerciseFrequency").value,
+          exerciseMinutesPerWeek: document.getElementById("exerciseMinutesPerWeek").value || 0,
+          waterIntakeLiters: document.getElementById("waterIntakeLiters").value || null,
+          bpSystolic: document.getElementById("bpSystolic").value || null,
+          bpDiastolic: document.getElementById("bpDiastolic").value || null,
+          restingHeartRate: document.getElementById("restingHeartRate").value || null,
+          stressLevel: document.getElementById("stressLevel").value || null,
+          smokingStatus: document.getElementById("smokingStatus").value || null,
+          alcoholConsumption: document.getElementById("alcoholConsumption").value || null,
+          attendanceStatus: document.getElementById("attendanceStatus").value,
+          checkupDate: document.getElementById("checkupDate").value || null,
+          checkupResult: document.getElementById("checkupResult").value || null,
+          checkupNotes: document.getElementById("checkupNotes").value,
+          assessmentNotes: document.getElementById("assessmentNotes").value,
+        };
+
+        try {
+          const result = await createHealthRecord(payload, token);
+          showToast("Entry saved", "success");
+          if (result.record.validationStatus === "flagged") {
+            showToast("Note: entry flagged for review — see history table", "error");
+          }
+          form.reset();
+          loadRecords();
+        } catch (err) {
+          showAlertBanner(formAlert, err.message, "error");
+        } finally {
+          setButtonLoading(submitBtn, false);
+        }
+      });
+      const reportForm = document.getElementById("reportForm");
+const reportList = document.getElementById("reportList");
+
+async function loadReports() {
+
+    const response = await fetch(
+        "http://localhost:5000/api/reports",
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    reportList.innerHTML = "";
+
+    if (data.reports.length === 0) {
+
+        reportList.innerHTML = "No Reports Uploaded";
+
+        return;
+    }
+
+    data.reports.forEach(report => {
+
+        const div = document.createElement("div");
+
+div.className = "panel";
+
+div.innerHTML = `
+<b>${report.reportName}</b>
+<br>
+${report.reportType}
+<br><br>
+<button class="btn btn-secondary">Delete</button>
+`;
+
+div.querySelector("button").addEventListener("click", () => {
+    deleteReport(report.id);
+});
+
+reportList.appendChild(div);
+
+    });
+
+}
+
+reportForm.addEventListener("submit", async function(e){
+
+    e.preventDefault();
+
+    const formData = new FormData();
+
+    formData.append(
+        "reportName",
+        document.getElementById("reportName").value
+    );
+
+    formData.append(
+        "reportType",
+        document.getElementById("reportType").value
+    );
+
+    formData.append(
+        "file",
+        document.getElementById("reportFile").files[0]
+    );
+
+    const response = await fetch(
+
+        "http://localhost:5000/api/reports/upload",
+
+        {
+
+            method:"POST",
+
+            headers:{
+
+                Authorization:`Bearer ${token}`
+
+            },
+
+            body:formData
+
+        }
+
+    );
+
+    const data = await response.json();
+
+    showToast(data.message,"success");
+
+    reportForm.reset();
+
+    loadReports();
+
+});
+
+async function deleteReport(id){
+
+    await fetch(
+
+        `http://localhost:5000/api/reports/${id}`,
+
+        {
+
+            method:"DELETE",
+
+            headers:{
+
+                Authorization:`Bearer ${token}`
+
+            }
+
+        }
+
+    );
+
+    loadReports();
+
+}
+async function loadRiskPrediction(){
+
+    const response = await fetch(
+
+        "http://localhost:5000/api/risk",
+
+        {
+
+            headers:{
+                Authorization:`Bearer ${token}`
+            }
+
+        }
+
+    );
+
+    const data = await response.json();
+
+    document.getElementById("riskResult").innerHTML=`
+
+        <h2>Risk Score : ${data.riskScore}</h2>
+
+        <h2>Risk Level : ${data.riskLevel}</h2>
+
+        <hr>
+
+        <p><b>Stress :</b> ${data.prediction.stressRisk}</p>
+
+        <p><b>Obesity :</b> ${data.prediction.obesityRisk}</p>
+
+        <p><b>Hypertension :</b> ${data.prediction.hypertensionRisk}</p>
+
+    `;
+
+}
+
+document
+.getElementById("predictRiskBtn")
+.addEventListener(
+"click",
+loadRiskPrediction
+);
+loadProfile();
+loadRecords();
+loadReports();
+loadRiskPrediction();
+    })();
+  </script>
+</body>
+</html>

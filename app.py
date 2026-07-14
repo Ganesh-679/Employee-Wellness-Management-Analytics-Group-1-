@@ -2,11 +2,22 @@ from flask import Flask, jsonify
 from config import Config
 from extensions import db, bcrypt, jwt, cors, limiter
 
-from models import User, Admin, PasswordResetToken
+from models import (
+    User,
+    Admin,
+    PasswordResetToken,
+    HealthRecord,
+    EmployeeProfile,
+    MedicalReport
+)
 
 from routes.user import user_bp
 from routes.admin import admin_bp
 from routes.password_reset import password_reset_bp
+from routes.health import health_bp
+from routes.report import report_bp
+from routes.profile import profile_bp
+from routes.risk import risk_bp
 
 
 def create_app():
@@ -27,6 +38,10 @@ def create_app():
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(password_reset_bp)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(report_bp)
+    app.register_blueprint(profile_bp)
+    app.register_blueprint(risk_bp)
 
     @app.route("/api/health", methods=["GET"])
     def health_check():

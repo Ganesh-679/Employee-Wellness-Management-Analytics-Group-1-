@@ -1,68 +1,88 @@
 /* =========================================================================
-   EMPLOYEE WELLNESS ANALYTICS — SHARED STYLESHEET
+   EMPLOYEE WELLNESS MANAGEMENT ANALYTICS — SHARED STYLESHEET
    -------------------------------------------------------------------------
-   This one file styles every page (home, sign up, register, login, forgot
-   password). Reading order below:
-     1. Design tokens (colors, fonts, spacing) as CSS variables
+   One file styles every page (home, sign up, register, login, verify,
+   forgot password). Reading order:
+     1. Design tokens (colors, fonts, spacing, shadows)
      2. Reset / base element styles
-     3. Layout shell (the two-column "split screen" every page uses)
-     4. The breathing-rings signature graphic (left panel)
-     5. Reusable components: buttons, cards, form fields, checklist,
-        password strength meter, toast notifications
-     6. Responsive rules (mobile)
+     3. Layout shell (two-column split screen)
+     4. Brand panel atmosphere + signature "signal" graphic
+     5. Logomark + icon set
+     6. Components: buttons, cards, form fields, checklist,
+        password strength meter, toasts, alerts
+     7. Responsive rules (mobile)
    ========================================================================= */
 
-/* ---------- 1. DESIGN TOKENS ---------------------------------------------
-   Centralizing colors/fonts as variables means if you (or your team) want
-   to re-theme the app later, you only change values here — not in every
-   page. */
+/* ---------- 1. DESIGN TOKENS ---------------------------------------------- */
 :root {
-  /* Wellness palette: deep teal = calm/trust, sage = growth, amber = energy */
+  /* Core wellness palette: deep teal = trust/calm, sage = growth, amber = signal/energy */
+  --teal-950: #0a2622;
   --teal-900: #0f3d39;
+  --teal-800: #154c46;
   --teal-700: #1b5e56;
-  --teal-600: #226b62;
+  --teal-600: #21786c;
+  --teal-500: #2b9384;
+
+  --sage-300: #a9d0b8;
   --sage-200: #d9e8de;
   --sage-100: #eef5f0;
-  --amber-500: #d9a441;
+  --sage-50:  #f5faf7;
+
   --amber-600: #b8872f;
-  --bg: #f6faf7;
+  --amber-500: #d9a441;
+  --amber-400: #e6bc63;
+  --amber-100: #faf0d9;
+
+  --bg: #f6faf8;
   --surface: #ffffff;
-  --text-900: #16241f;
-  --text-500: #5b6b64;
-  --text-muted: #8a9a93;
+  --surface-sunken: #fbfdfc;
+
+  --ink-900: #142621;
+  --ink-700: #33453e;
+  --ink-500: #5b6b64;
+  --ink-muted: #8a9a93;
+
   --border: #dde8e2;
+  --border-strong: #c7d9cf;
+
   --danger: #c2483c;
   --danger-bg: #fbeae8;
   --success: #2f7d5d;
   --success-bg: #e8f4ee;
 
+  /* Type system: Fraunces carries warmth/authority, Inter carries clarity,
+     IBM Plex Mono marks anything measured or system-level (labels, codes,
+     the fine print) — a small nod to the "analytics" half of the product. */
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 24px;
-  --shadow-card: 0 12px 32px rgba(15, 61, 57, 0.08);
-  --transition: 180ms ease;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 26px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 61, 57, 0.06);
+  --shadow-card: 0 1px 2px rgba(15, 61, 57, 0.04), 0 16px 36px -12px rgba(15, 61, 57, 0.16);
+  --shadow-card-hover: 0 1px 2px rgba(15, 61, 57, 0.05), 0 24px 48px -16px rgba(15, 61, 57, 0.24);
+  --shadow-btn: 0 10px 24px -8px rgba(19, 76, 68, 0.45);
+  --ring-focus: 0 0 0 4px rgba(217, 164, 65, 0.28);
+
+  --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ---------- 2. RESET / BASE ---------------------------------------------- */
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-}
+html, body { margin: 0; padding: 0; min-height: 100%; }
 
 body {
   background: var(--bg);
-  color: var(--text-900);
+  color: var(--ink-900);
   font-family: var(--font-body);
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3 {
@@ -70,98 +90,32 @@ h1, h2, h3 {
   color: var(--teal-900);
   margin: 0 0 8px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-p {
-  margin: 0 0 16px;
-  color: var(--text-500);
-}
+p { margin: 0 0 16px; color: var(--ink-500); }
 
-a {
-  color: var(--teal-700);
-  text-decoration: none;
-}
+a { color: var(--teal-700); text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-color: rgba(27, 94, 86, 0.35); }
 
-a:hover {
-  text-decoration: underline;
-}
-
-/* Visible keyboard focus everywhere — accessibility floor, not optional */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid var(--amber-500);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
 }
 
-/* Respect users who've asked for reduced motion at the OS level */
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
+  * { animation: none !important; transition: none !important; }
 }
 
-/* ---------- 3. LAYOUT SHELL -----------------------------------------------
-   Every auth page uses the same two-column "shell": a left brand panel
-   (hidden on mobile) and a right panel holding the actual page content. */
+/* ---------- 3. LAYOUT SHELL ------------------------------------------------ */
 .shell {
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-}
-
-.brand-panel {
-  background: linear-gradient(160deg, var(--teal-900), var(--teal-700));
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 48px;
-  position: relative;
-  overflow: hidden;
-}
-
-.brand-panel .brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  z-index: 2;
-}
-
-.brand-panel .brand-copy {
-  z-index: 2;
-  max-width: 380px;
-}
-
-.brand-panel .brand-copy .eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 12px;
-  color: var(--sage-200);
-  margin-bottom: 12px;
-  display: block;
-}
-
-.brand-panel .brand-copy h1 {
-  color: #fff;
-  font-size: 34px;
-  line-height: 1.2;
-}
-
-.brand-panel .brand-copy p {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.brand-panel .fine-print {
-  z-index: 2;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
 }
 
 .content-panel {
@@ -169,65 +123,236 @@ select:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
+  background:
+    radial-gradient(1200px 480px at 100% 0%, rgba(217, 164, 65, 0.05), transparent 60%),
+    var(--bg);
 }
 
 .content-card {
   width: 100%;
   max-width: 420px;
+  animation: card-rise var(--transition-slow) both;
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .content-card .step-label {
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 12px;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-family: var(--font-mono);
   color: var(--amber-600);
   font-weight: 600;
-  margin-bottom: 8px;
-  display: block;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content-card .step-label::before {
+  content: "";
+  width: 14px;
+  height: 1.5px;
+  background: var(--amber-500);
+  display: inline-block;
 }
 
 .content-card h2 {
-  font-size: 28px;
+  font-size: 30px;
   margin-bottom: 6px;
 }
 
-.content-card .subtitle {
-  margin-bottom: 28px;
+.content-card .subtitle { margin-bottom: 30px; }
+
+/* ---------- 4. BRAND PANEL ATMOSPHERE + SIGNAL GRAPHIC -------------------- */
+.brand-panel {
+  background:
+    radial-gradient(720px 480px at 88% -10%, rgba(217, 164, 65, 0.20), transparent 60%),
+    radial-gradient(640px 520px at -10% 110%, rgba(169, 208, 184, 0.22), transparent 55%),
+    linear-gradient(165deg, var(--teal-950) 0%, var(--teal-900) 46%, var(--teal-800) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 52px 52px 44px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
 
-/* ---------- 4. BREATHING RINGS (signature graphic) ------------------------
-   A set of concentric circles that gently expand and fade — a visual nod
-   to a guided breathing exercise. This is the one "signature" flourish;
-   everything else on the page stays quiet on purpose. */
+/* fine grain texture for depth, kept subtle */
+.brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.brand-panel .brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  z-index: 2;
+  position: relative;
+}
+
+.brand-panel .brand-mark .logomark {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: var(--amber-400);
+}
+
+.brand-panel .brand-copy {
+  z-index: 2;
+  position: relative;
+  max-width: 400px;
+  margin: 56px 0 40px;
+}
+
+.brand-panel .brand-copy .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--sage-300);
+  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.brand-panel .brand-copy .eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber-400);
+  box-shadow: 0 0 0 3px rgba(230, 188, 99, 0.22);
+}
+
+.brand-panel .brand-copy h1 {
+  color: #fff;
+  font-size: 36px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+}
+
+.brand-panel .brand-copy p {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  max-width: 360px;
+}
+
+.brand-panel .fine-print {
+  z-index: 2;
+  position: relative;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-panel .fine-print::before {
+  content: "";
+  width: 20px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Signature graphic: "Vital Signal" — a calm sine wave (the wellness
+   read-out) drawn beneath a set of breathing rings (the analytics
+   read-out), fusing the two halves of the product into one motif. */
 .breathing-rings {
   position: absolute;
-  right: -80px;
-  bottom: -80px;
-  width: 380px;
-  height: 380px;
+  right: -90px;
+  bottom: -110px;
+  width: 420px;
+  height: 420px;
   z-index: 1;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .breathing-rings circle {
   fill: none;
-  stroke: rgba(217, 164, 65, 0.35);
-  stroke-width: 1.5;
+  stroke: rgba(230, 188, 99, 0.30);
+  stroke-width: 1;
   transform-origin: center;
-  animation: breathe 6s ease-in-out infinite;
+  animation: breathe 7s ease-in-out infinite;
 }
 
-.breathing-rings circle:nth-child(2) { animation-delay: 1.2s; stroke: rgba(255,255,255,0.18); }
-.breathing-rings circle:nth-child(3) { animation-delay: 2.4s; stroke: rgba(217, 164, 65, 0.22); }
-.breathing-rings circle:nth-child(4) { animation-delay: 3.6s; stroke: rgba(255,255,255,0.12); }
+.breathing-rings circle:nth-child(2) { animation-delay: 1.4s; stroke: rgba(255, 255, 255, 0.14); }
+.breathing-rings circle:nth-child(3) { animation-delay: 2.8s; stroke: rgba(169, 208, 184, 0.22); }
+.breathing-rings circle:nth-child(4) { animation-delay: 4.2s; stroke: rgba(255, 255, 255, 0.10); }
 
 @keyframes breathe {
-  0%   { transform: scale(0.85); opacity: 0.15; }
-  50%  { transform: scale(1.05); opacity: 0.7; }
-  100% { transform: scale(0.85); opacity: 0.15; }
+  0%   { transform: scale(0.82); opacity: 0.12; }
+  50%  { transform: scale(1.06); opacity: 0.65; }
+  100% { transform: scale(0.82); opacity: 0.12; }
 }
 
-/* ---------- 5. COMPONENTS -------------------------------------------------- */
+.signal-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 86px;
+  width: 100%;
+  height: 64px;
+  z-index: 1;
+  opacity: 0.9;
+}
+
+.signal-wave path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.signal-wave path.track {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.2;
+}
+
+.signal-wave path.pulse {
+  stroke: var(--amber-400);
+  stroke-width: 2;
+  stroke-dasharray: 10 610;
+  stroke-dashoffset: 0;
+  animation: signal-travel 4.8s linear infinite;
+}
+
+@keyframes signal-travel {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -520; }
+}
+
+/* ---------- 5. LOGOMARK + ICON SET ---------------------------------------- */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon svg { width: 100%; height: 100%; }
+
+/* ---------- 6. COMPONENTS --------------------------------------------------- */
 
 /* Buttons */
 .btn {
@@ -236,132 +361,164 @@ select:focus-visible {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 13px 20px;
+  padding: 14px 20px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
+  letter-spacing: 0.005em;
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
 }
 
-.btn:active {
-  transform: translateY(1px);
-}
+.btn:active { transform: translateY(1px); }
 
 .btn-primary {
-  background: var(--teal-700);
+  background: linear-gradient(180deg, var(--teal-600), var(--teal-700));
   color: #fff;
+  box-shadow: var(--shadow-btn);
 }
 
 .btn-primary:hover {
-  background: var(--teal-900);
+  background: linear-gradient(180deg, var(--teal-700), var(--teal-900));
+  box-shadow: 0 14px 30px -8px rgba(19, 76, 68, 0.55);
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
   background: var(--border);
-  color: var(--text-muted);
+  color: var(--ink-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  background: transparent;
+  background: var(--surface);
   color: var(--teal-700);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
 }
 
 .btn-secondary:hover {
-  border-color: var(--teal-700);
+  border-color: var(--teal-600);
   background: var(--sage-100);
 }
 
-/* Choice cards (used on home, sign-up-role, login-role pages) */
-.choice-grid {
-  display: grid;
-  gap: 16px;
-}
+/* Choice cards (home, sign-up-role, login-role pages) */
+.choice-grid { display: grid; gap: 14px; }
 
 .choice-card {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 20px 20px 20px 18px;
   cursor: pointer;
+  position: relative;
   transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.choice-card::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--amber-500);
+  transform: scaleY(0);
+  transition: transform var(--transition);
 }
 
 .choice-card:hover {
   border-color: var(--teal-600);
-  box-shadow: var(--shadow-card);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-3px);
 }
 
+.choice-card:hover::after { transform: scaleY(1); }
+
 .choice-card .choice-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: var(--sage-100);
   color: var(--teal-700);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-  font-size: 18px;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition);
 }
+
+.choice-card .choice-icon svg { width: 21px; height: 21px; }
+
+.choice-card:hover .choice-icon { background: var(--teal-700); color: #fff; }
+
+.choice-card .choice-body { flex: 1; min-width: 0; }
 
 .choice-card h3 {
   font-size: 17px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.choice-card p {
-  margin: 0;
-  font-size: 13px;
+.choice-card p { margin: 0; font-size: 13px; }
+
+.choice-card .choice-arrow {
+  color: var(--ink-muted);
+  transform: translateX(-4px);
+  opacity: 0;
+  transition: transform var(--transition), opacity var(--transition), color var(--transition);
+  margin-top: 12px;
 }
+
+.choice-card:hover .choice-arrow {
+  transform: translateX(0);
+  opacity: 1;
+  color: var(--teal-600);
+}
+
+.choice-card .choice-arrow svg { width: 16px; height: 16px; }
 
 /* Form fields */
-.form-group {
-  margin-bottom: 18px;
-}
+.form-group { margin-bottom: 18px; }
 
 .form-group label {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-900);
+  color: var(--ink-900);
   margin-bottom: 6px;
 }
 
-.input-wrapper {
-  position: relative;
-}
+.input-wrapper { position: relative; }
 
 .input-wrapper input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-family: var(--font-body);
-  background: var(--surface);
-  color: var(--text-900);
-  transition: border-color var(--transition);
+  background: var(--surface-sunken);
+  color: var(--ink-900);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 
 .input-wrapper input:focus {
   border-color: var(--teal-600);
+  background: var(--surface);
+  box-shadow: var(--ring-focus);
+  outline: none;
 }
 
-.input-wrapper input.field-invalid {
-  border-color: var(--danger);
-}
-
-.input-wrapper input.field-valid {
-  border-color: var(--success);
-}
+.input-wrapper input.field-invalid { border-color: var(--danger); }
+.input-wrapper input.field-valid { border-color: var(--success); }
 
 .input-wrapper .toggle-eye {
   position: absolute;
@@ -372,16 +529,12 @@ select:focus-visible {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--ink-muted);
   padding: 4px;
   width: auto;
 }
 
-.field-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 6px;
-}
+.field-hint { font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
 
 .field-error {
   font-size: 12px;
@@ -390,16 +543,10 @@ select:focus-visible {
   display: none;
 }
 
-.field-error.visible {
-  display: block;
-}
+.field-error.visible { display: block; }
 
 /* Password strength meter */
-.strength-meter {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-}
+.strength-meter { display: flex; gap: 4px; margin-top: 8px; }
 
 .strength-meter .bar {
   height: 4px;
@@ -409,11 +556,7 @@ select:focus-visible {
   transition: background var(--transition);
 }
 
-.strength-label {
-  font-size: 12px;
-  margin-top: 6px;
-  font-weight: 600;
-}
+.strength-label { font-size: 12px; margin-top: 6px; font-weight: 600; }
 
 .strength-weak .bar:nth-child(1) { background: var(--danger); }
 .strength-weak .strength-label { color: var(--danger); }
@@ -434,14 +577,10 @@ select:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--ink-muted);
 }
 
-.checklist li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.checklist li { display: flex; align-items: center; gap: 6px; }
 
 .checklist li .dot {
   width: 14px;
@@ -453,11 +592,10 @@ select:focus-visible {
   justify-content: center;
   font-size: 9px;
   flex-shrink: 0;
+  transition: background var(--transition), border-color var(--transition);
 }
 
-.checklist li.met {
-  color: var(--success);
-}
+.checklist li.met { color: var(--success); }
 
 .checklist li.met .dot {
   background: var(--success);
@@ -474,29 +612,34 @@ select:focus-visible {
   font-size: 13px;
 }
 
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.checkbox-row input {
-  width: auto;
-  margin: 0;
-}
+.checkbox-row { display: flex; align-items: center; gap: 8px; }
+.checkbox-row input { width: auto; margin: 0; }
 
 .divider-text {
   text-align: center;
-  margin: 20px 0;
+  margin: 22px 0;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--ink-muted);
+  position: relative;
 }
 
-.footer-note {
-  text-align: center;
-  margin-top: 22px;
-  font-size: 14px;
+.divider-text::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: var(--border);
+  z-index: 0;
 }
+
+.divider-text span {
+  background: var(--bg);
+  padding: 0 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-note { text-align: center; margin-top: 24px; font-size: 14px; }
 
 /* Toast notifications */
 .toast-stack {
@@ -541,19 +684,9 @@ select:focus-visible {
   display: none;
 }
 
-.alert-banner.visible {
-  display: block;
-}
-
-.alert-banner.alert-error {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.alert-banner.alert-success {
-  background: var(--success-bg);
-  color: var(--success);
-}
+.alert-banner.visible { display: block; }
+.alert-banner.alert-error { background: var(--danger-bg); color: var(--danger); }
+.alert-banner.alert-success { background: var(--success-bg); color: var(--success); }
 
 /* Spinner shown inside the submit button while a request is pending */
 .spinner {
@@ -566,38 +699,26 @@ select:focus-visible {
   display: none;
 }
 
-.btn.is-loading .spinner {
-  display: inline-block;
-}
+.btn.is-loading .spinner { display: inline-block; }
+.btn.is-loading .btn-text { opacity: 0.7; }
 
-.btn.is-loading .btn-text {
-  opacity: 0.7;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ---------- 6. RESPONSIVE -------------------------------------------------- */
+/* ---------- 7. RESPONSIVE --------------------------------------------------- */
 @media (max-width: 860px) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
+  .shell { grid-template-columns: 1fr; }
 
-  .brand-panel {
-    padding: 32px 24px;
-    min-height: 220px;
-  }
+  .brand-panel { padding: 30px 24px 26px; min-height: 240px; }
 
-  .brand-panel .brand-copy h1 {
-    font-size: 26px;
-  }
+  .brand-panel .brand-copy { margin: 28px 0 20px; }
 
-  .content-panel {
-    padding: 32px 20px 48px;
-  }
+  .brand-panel .brand-copy h1 { font-size: 26px; }
 
-  .checklist {
-    grid-template-columns: 1fr;
-  }
+  .signal-wave { display: none; }
+
+  .breathing-rings { width: 300px; height: 300px; right: -70px; bottom: -80px; }
+
+  .content-panel { padding: 32px 20px 48px; }
+
+  .checklist { grid-template-columns: 1fr; }
 }

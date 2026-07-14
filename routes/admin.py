@@ -1,7 +1,11 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 from extensions import db, bcrypt, limiter
-from models import Admin
+from models import (
+    Admin,
+    User,
+    HealthRecord
+)
 from utils import (
     is_password_valid,
     failed_password_rules,
@@ -10,6 +14,8 @@ from utils import (
     verify_totp
 )
 from config import Config
+from flask_jwt_extended import jwt_required, get_jwt
+from sqlalchemy import func
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -99,3 +105,49 @@ def verify_admin_2fa():
         "token":token,
         "role":"admin"
     }),200
+@admin_bp.route("/dashboard", methods=["GET"])
+@jwt_required()
+def admin_dashboard():
+
+    claims = get_jwt()
+
+    if claims.get("role") != "admin":
+        return jsonify({
+            "message": "Admin access required"
+        }), 403
+
+    total_employees = User.query.count()
+
+    total_records = HealthRecord.query.count()
+
+    avg_bmi = db.session.query(
+        func.avg(HealthRecord.bmi)
+    ).scalar()
+
+    avg_sleep = db.session.query(
+        func.avg(HealthRecord.sleep_hours)
+    ).scalar()
+
+    high_risk = HealthRecord.query.filter_by(
+        risk_level="High"
+    ).count()
+
+    flagged = HealthRecord.query.filter_by(
+        validation_status="flagged"
+    ).count()
+
+    return jsonify({
+
+        "totalEmployees": total_employees,
+
+        "totalHealthRecords": total_records,
+
+        "averageBMI": round(avg_bmi, 2) if avg_bmi else 0,
+
+        "averageSleep": round(avg_sleep, 2) if avg_sleep else 0,
+
+        "highRiskEmployees": high_risk,
+
+        "flaggedRecords": flagged
+
+    }), 200
