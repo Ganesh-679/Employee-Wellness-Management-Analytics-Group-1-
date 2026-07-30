@@ -1,23 +1,34 @@
+# Virtual environment
 venv/
+.venv/
+env/
+
+# Python cache files
 __pycache__/
-*.pyc
-.env
-wellness.db
-# Local configuration secrets
-.env
+*.py[cod]
+*$py.class
+
+# Local database
+*.db
 wellness.db
 
-# Python build artifacts
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.ipynb_checkpoints/
+# User uploads
+uploads/
 
-# System files
-.DS_Store
-Thumbs.db
-"venv/" 
-"__pycache__/" 
-"*.pyc" 
-".env" 
+# Environment files
+.env
+
+# Editor settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Presentations and scratch files
+*.pptx
+*.docx
+*.pdf
+scratch/

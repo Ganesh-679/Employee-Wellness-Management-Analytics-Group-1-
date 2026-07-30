@@ -10,8 +10,6 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    totp_secret = db.Column(db.String(64), nullable=True)
-    two_factor_enabled = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -21,8 +19,6 @@ class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    totp_secret = db.Column(db.String(64), nullable=True)
-    two_factor_enabled = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -55,6 +51,7 @@ class EmployeeProfile(db.Model):
     date_of_joining = db.Column(db.Date, nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     work_location = db.Column(db.String(80), nullable=True)  # e.g. "Bengaluru", "Remote"
+    profile_picture = db.Column(db.String(255), nullable=True)  # filename of uploaded avatar
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -68,6 +65,7 @@ class EmployeeProfile(db.Model):
             "dateOfJoining": self.date_of_joining.isoformat() if self.date_of_joining else None,
             "phone": self.phone,
             "workLocation": self.work_location,
+            "profilePicture": self.profile_picture,
             "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
         }
 
@@ -191,4 +189,103 @@ class MedicalReport(db.Model):
             "fileName": self.file_name,
             "filePath": self.file_path,
             "uploadedAt": self.uploaded_at.isoformat()
+        }
+
+
+class SentimentLog(db.Model):
+    """Module 4: Mental Health & Sentiment Analytics.
+    Stores daily journals, reflections, or feedback logs for NLP analysis.
+    """
+    __tablename__ = "sentiment_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    text_content = db.Column(db.Text, nullable=False)
+    sentiment_score = db.Column(db.Float, nullable=False)        # -1.0 to 1.0
+    sentiment_label = db.Column(db.String(20), nullable=False)    # Positive/Neutral/Negative
+    stress_probability = db.Column(db.Float, nullable=False)      # 0 to 100
+    anxiety_probability = db.Column(db.Float, nullable=False)     # 0 to 100
+    burnout_probability = db.Column(db.Float, nullable=False)     # 0 to 100
+    detected_emotions = db.Column(db.Text, nullable=False)        # JSON-serialized list
+
+    logged_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "textContent": self.text_content,
+            "sentimentScore": self.sentiment_score,
+            "sentimentLabel": self.sentiment_label,
+            "stressProbability": self.stress_probability,
+            "anxietyProbability": self.anxiety_probability,
+            "burnoutProbability": self.burnout_probability,
+            "detectedEmotions": json.loads(self.detected_emotions) if (self.detected_emotions and isinstance(self.detected_emotions, str) and self.detected_emotions.startswith("[")) else (self.detected_emotions or []),
+            "loggedAt": self.logged_at.isoformat() if self.logged_at else None
+        }
+
+
+class ChatMessage(db.Model):
+    """Module 6: AI Wellness Chatbot conversation log."""
+    __tablename__ = "chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender = db.Column(db.String(10), nullable=False)  # 'user' or 'bot'
+    text = db.Column(db.Text, nullable=False)
+    intent = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "sender": self.sender,
+            "text": self.text,
+            "intent": self.intent,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None
+        }
+
+
+class WellnessReminder(db.Model):
+    """Module 6: Automated wellness reminders (hydration, stretch breaks, sleep alarms)."""
+    __tablename__ = "wellness_reminders"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = db.Column(db.String(100), nullable=False)
+    reminder_type = db.Column(db.String(50), nullable=False, default="hydration")
+    time_str = db.Column(db.String(50), nullable=False, default="Every 2 hours")
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "reminderType": self.reminder_type,
+            "timeStr": self.time_str,
+            "isActive": self.is_active,
+            "createdAt": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class HealthCheckupSchedule(db.Model):
+    """Module 6: Scheduled employee health checkups."""
+    __tablename__ = "health_checkup_schedules"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    checkup_type = db.Column(db.String(100), nullable=False)
+    scheduled_date = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="Scheduled")  # Scheduled, Completed, Cancelled
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "checkupType": self.checkup_type,
+            "scheduledDate": self.scheduled_date,
+            "status": self.status,
+            "notes": self.notes,
+            "createdAt": self.created_at.isoformat() if self.created_at else None
         }

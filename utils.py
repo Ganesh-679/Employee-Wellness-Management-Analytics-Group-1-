@@ -1,10 +1,6 @@
 import re
 import random
 import smtplib
-import pyotp
-import qrcode
-import io
-import base64
 from datetime import date, datetime
 from email.mime.text import MIMEText
 
@@ -75,30 +71,6 @@ def send_otp_email(to_address, otp_code, app_config):
         server.starttls()
         server.login(app_config["MAIL_USERNAME"], app_config["MAIL_PASSWORD"])
         server.sendmail(app_config.get("MAIL_SENDER"), [to_address], message.as_string())
-def generate_totp_secret():
-    return pyotp.random_base32()
-
-
-def generate_qr_code(secret, email):
-    totp = pyotp.TOTP(secret)
-
-    uri = totp.provisioning_uri(
-        name=email,
-        issuer_name="Employee Wellness Management"
-    )
-
-    qr = qrcode.make(uri)
-
-    buffer = io.BytesIO()
-    qr.save(buffer, format="PNG")
-
-    return base64.b64encode(buffer.getvalue()).decode()
-
-
-def verify_totp(secret, code):
-    totp = pyotp.TOTP(secret)
-    return totp.verify(code)
-
 # =========================================================================
 # Module 1: Employee Health Data Management
 # -------------------------------------------------------------------------
@@ -354,6 +326,11 @@ def validate_and_normalize_profile_data(payload):
         "phone": phone or None,
         "work_location": (payload.get("workLocation") or "").strip() or None,
     }
+
+    # Allow clearing the profile picture via PUT
+    if "profilePicture" in payload:
+        normalized["profile_picture"] = payload["profilePicture"]
+
     return normalized, errors
 def calculate_health_score(data):
     score = 100
@@ -407,3 +384,147 @@ def calculate_risk_level(data, warnings):
         return "Medium"
 
     return "High"
+
+
+def analyze_mental_health_nlp(text):
+    """
+    Analyzes written text for sentiment, stress, anxiety, and burnout risk.
+    Uses an explainable lexicon-based NLP algorithm with negation handling.
+    """
+    text = text or ""
+    clean_text = re.sub(r"[^\w\s]", "", text.lower())
+    words = clean_text.split()
+    word_count = len(words)
+
+    # Lexicon categories
+    positives = {
+        'happy', 'calm', 'good', 'great', 'excellent', 'motivated', 'energetic', 
+        'relaxed', 'peaceful', 'productive', 'excited', 'balanced', 'well', 'healthy', 
+        'positive', 'cheerful', 'joy', 'wonderful', 'amazing', 'love', 'content', 
+        'satisfied', 'refreshed', 'peace', 'optimistic', 'hopeful', 'grateful', 'proud'
+    }
+    
+    negatives = {
+        'sad', 'depressed', 'anxious', 'stressed', 'tired', 'burnout', 'exhausted', 
+        'angry', 'frustrated', 'bad', 'terrible', 'worst', 'pressure', 'deadline', 
+        'overwhelmed', 'hate', 'unhappy', 'lonely', 'worry', 'hopeless', 'helpless', 
+        'fear', 'scared', 'panic', 'tension', 'stressful', 'drained', 'fatigue', 
+        'annoyed', 'disappointed', 'fail', 'failure', 'difficult', 'pain', 'struggle', 
+        'struggling', 'cry', 'crying'
+    }
+
+    negations = {'not', 'no', 'never', 'dont', 'doesnt', 'wasnt', 'cant', 'cannot', 'without'}
+
+    stress_keywords = {
+        'stress', 'stressed', 'stressful', 'pressure', 'deadline', 'deadlines', 
+        'overloaded', 'overwhelming', 'busy', 'rush', 'rushed', 'demanding', 'demands'
+    }
+    
+    anxiety_keywords = {
+        'anxious', 'anxiety', 'worried', 'worry', 'nervous', 'scared', 'panic', 
+        'fear', 'tense', 'tension', 'uneasy', 'paranoid'
+    }
+    
+    burnout_keywords = {
+        'burnout', 'exhausted', 'drained', 'fatigued', 'tired', 'worn', 'empty', 
+        'helpless', 'hopeless', 'overwhelmed', 'give', 'quitting', 'quit'
+    }
+
+    pos_count = 0
+    neg_count = 0
+    stress_hits = 0
+    anxiety_hits = 0
+    burnout_hits = 0
+
+    for idx, word in enumerate(words):
+        # Check if preceded by a negation word within 3 indices
+        is_negated = False
+        for offset in (1, 2, 3):
+            if idx - offset >= 0 and words[idx - offset] in negations:
+                is_negated = True
+                break
+
+        # Count sentiment categories
+        if word in positives:
+            if is_negated:
+                neg_count += 1
+            else:
+                pos_count += 1
+        elif word in negatives:
+            if is_negated:
+                pos_count += 1
+            else:
+                neg_count += 1
+
+        # Count risk dimensions
+        if word in stress_keywords:
+            if not is_negated:
+                stress_hits += 1
+        if word in anxiety_keywords:
+            if not is_negated:
+                anxiety_hits += 1
+        if word in burnout_keywords:
+            if not is_negated:
+                burnout_hits += 1
+
+    # Normalize counts based on length (standardizing density per 15 words)
+    scale_factor = max(1.0, word_count / 15.0)
+    
+    stress_prob = min(100.0, round((stress_hits / scale_factor) * 45.0, 1))
+    anxiety_prob = min(100.0, round((anxiety_hits / scale_factor) * 45.0, 1))
+    burnout_prob = min(100.0, round((burnout_hits / scale_factor) * 45.0, 1))
+
+    # Base values if sentiment is highly negative
+    sentiment_score = 0.0
+    total_sentiment_words = pos_count + neg_count
+    if total_sentiment_words > 0:
+        sentiment_score = round((pos_count - neg_count) / total_sentiment_words, 2)
+    else:
+        # Default neutral or slight adjustments based on direct hits
+        if stress_hits or anxiety_hits or burnout_hits:
+            sentiment_score = -0.2
+        else:
+            sentiment_score = 0.0
+
+    # Ensure negative sentiment bumps probabilities slightly
+    if sentiment_score < -0.2:
+        stress_prob = min(100.0, stress_prob + 15)
+        anxiety_prob = min(100.0, anxiety_prob + 15)
+        burnout_prob = min(100.0, burnout_prob + 15)
+
+    # Determine labels
+    if sentiment_score >= 0.15:
+        sentiment_label = "Positive"
+    elif sentiment_score <= -0.15:
+        sentiment_label = "Negative"
+    else:
+        sentiment_label = "Neutral"
+
+    # Determine specific emotion tags
+    emotions = []
+    if burnout_prob >= 40:
+        emotions.append("Burned Out")
+    if stress_prob >= 40:
+        emotions.append("Stressed")
+    if anxiety_prob >= 40:
+        emotions.append("Anxious")
+        
+    if sentiment_score > 0.3:
+        if "relaxed" in words or "calm" in words:
+            emotions.append("Calm & Relaxed")
+        else:
+            emotions.append("Happy & Motivated")
+    elif sentiment_score < -0.3 and not emotions:
+        emotions.append("Overwhelmed")
+
+    if not emotions:
+        emotions.append("Neutral")
+
+    return {
+        "sentiment_score": sentiment_score,
+        "sentiment_label": sentiment_label,
+        "stress_probability": round(stress_prob, 1),
+        "anxiety_probability": round(anxiety_prob, 1),
+        "burnout_probability": round(burnout_prob, 1),
+        "detected_emotions": emotions
+    }

@@ -18,7 +18,7 @@ def _require_user_role():
     return claims.get("role") == "user"
 
 
-@health_bp.route("", methods=["POST"])
+@health_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_health_record():
     if not _require_user_role():
@@ -70,7 +70,7 @@ def create_health_record():
     }), 201
 
 
-@health_bp.route("", methods=["GET"])
+@health_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_health_records():
     if not _require_user_role():

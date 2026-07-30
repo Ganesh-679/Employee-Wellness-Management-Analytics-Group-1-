@@ -67,7 +67,7 @@
 
           <div class="row-between">
             <label class="checkbox-row">
-              <input type="checkbox" id="rememberMe" name="rememberMe" />
+              <input type="checkbox" id="rememberMe" name="rememberMe" checked />
               Remember me
             </label>
             <a href="forgot-password.html?role=admin">Forgot password?</a>
@@ -134,14 +134,10 @@
     rememberMe: rememberMe.checked
 });
 
-if (result.requires2FA) {
+// Login successful — go straight to the dashboard.
+persistSession(result.token, "admin", rememberMe.checked);
 
-    sessionStorage.setItem("adminId", result.adminId);
-
-    window.location.href = "verify-2fa-admin.html";
-
-    return;
-}
+window.location.href = "admin-dashboard.html";
       } catch (error) {
         showAlertBanner(formAlert, error.message || "Invalid admin ID or password.");
         showToast(error.message || "Invalid admin ID or password.", "error");

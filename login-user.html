@@ -68,7 +68,7 @@
 
           <div class="row-between">
             <label class="checkbox-row">
-              <input type="checkbox" id="rememberMe" name="rememberMe" />
+              <input type="checkbox" id="rememberMe" name="rememberMe" checked />
               Remember me
             </label>
             <a href="forgot-password.html?role=user">Forgot password?</a>
@@ -135,22 +135,8 @@
     rememberMe: rememberMe.checked
 });
 
-// Password correct but 2FA required
-if (result.requires2FA) {
-
-    sessionStorage.setItem("pendingEmail", email);
-    sessionStorage.setItem(
-    "rememberMe",
-    rememberMe.checked
-);
-
-    window.location.href = "verify-2fa.html";
-
-    return;
-}
-
-// Fallback (if 2FA disabled)
-persistSession(result.token, "user");
+// Login successful — go straight to the dashboard.
+persistSession(result.token, "user", rememberMe.checked);
 
 window.location.href = "dashboard.html";
       } catch (error) {

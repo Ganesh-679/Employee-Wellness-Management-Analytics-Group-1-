@@ -1,7 +1,9 @@
 import os
+import uuid
 from werkzeug.utils import secure_filename
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_file, abort
+
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from extensions import db
@@ -62,7 +64,8 @@ def upload_report():
 
     os.makedirs(upload_folder, exist_ok=True)
 
-    filename = secure_filename(file.filename)
+    original_filename = secure_filename(file.filename)
+    filename = f"{uuid.uuid4().hex}_{original_filename}"
 
     filepath = os.path.join(
         upload_folder,
@@ -119,6 +122,33 @@ def get_reports():
         ]
 
     }), 200
+
+
+@report_bp.route("/<int:id>/file", methods=["GET"])
+@jwt_required()
+def get_report_file(id):
+
+    claims = get_jwt()
+
+    query = MedicalReport.query.filter_by(id=id)
+
+    # Employees can only open their own reports; admins can open any
+    # employee's report (matching the read access admins already have
+    # elsewhere in the app, e.g. the admin records dashboard).
+    if claims.get("role") != "admin":
+        query = query.filter_by(user_id=int(get_jwt_identity()))
+
+    report = query.first()
+
+    if not report:
+        return jsonify({"message": "Report not found."}), 404
+
+    if not os.path.exists(report.file_path):
+        return jsonify({"message": "Report file is missing on the server."}), 404
+
+    # as_attachment=False so PDFs/images open inline in a new tab instead
+    # of forcing a download.
+    return send_file(report.file_path, as_attachment=False, download_name=report.file_name)
 
 
 @report_bp.route("/<int:id>", methods=["DELETE"])
