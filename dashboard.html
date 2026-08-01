@@ -1154,6 +1154,13 @@
       <button class="nav-item" data-view="sentimentView" type="button">Mental Health &amp; Sentiment</button>
       <button class="nav-item" data-view="employeeAnalyticsView" type="button">📊 Wellness Analytics &amp; Performance</button>
       <button class="nav-item" data-view="chatbotView" type="button">🤖 AI Wellness Chatbot</button>
+      <button class="nav-item" data-view="trackerView" type="button">
+    🎯 Daily Tracker
+</button>
+
+<button class="nav-item" data-view="leaderboardView" type="button">
+    🏆 Leaderboard
+</button>
     </nav>
     <div class="sidebar-footer">
       <button class="btn btn-secondary" id="themeToggleBtn" type="button" style="margin-bottom: 8px; width: 100%;">🌙 Dark Mode</button>
@@ -1168,6 +1175,90 @@
         <h1>Personal Information</h1>
         <p>Your role at the company — used across the wellness modules.</p>
       </div>
+      <!-- Greeting Card -->
+<div class="panel" id="greetingCard" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;">
+
+    <div>
+        <h2 id="greetingText" style="margin:0;font-size:24px;color:var(--teal-900);">
+            Good Morning 👋
+        </h2>
+
+        <p id="greetingSubText"
+           style="margin-top:6px;color:var(--ink-500);">
+            Welcome back! Have a healthy day.
+        </p>
+        <div style="margin-top:18px;max-width:420px;">
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+
+        <span style="font-size:14px;font-weight:600;">
+            Profile Completion
+        </span>
+
+        <span id="profileCompletionText"
+              style="font-size:14px;font-weight:bold;color:#0f766e;">
+            0%
+        </span>
+
+    </div>
+
+    <div style="width:100%;height:10px;background:#e5e7eb;border-radius:20px;">
+
+        <div id="profileCompletionBar"
+             style="width:0%;height:10px;background:#0f766e;border-radius:20px;transition:.4s;">
+        </div>
+
+    </div>
+
+</div>
+    </div>
+    
+    <div style="display:flex;gap:15px;flex-wrap:wrap;">
+
+        <!-- Wellness Score -->
+        <div style="
+            background:#f8fafc;
+            border:1px solid #dbeafe;
+            border-radius:12px;
+            padding:15px 22px;
+            text-align:center;
+            min-width:130px;">
+
+            <div style="font-size:13px;color:#666;">
+                Wellness Score
+            </div>
+
+            <div id="wellnessScore"
+                 style="font-size:30px;
+                        font-weight:bold;
+                        color:#0f766e;">
+                100
+            </div>
+
+            <div id="wellnessStatus"
+                 style="font-size:13px;
+                        color:green;">
+                Excellent
+            </div>
+
+        </div>
+
+        <!-- Date -->
+        <div style="text-align:right;align-self:center;">
+            <div style="font-size:13px;color:#666;">
+                Today
+            </div>
+
+            <div id="todayDate"
+                 style="font-weight:600;">
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</div>
       <div class="panel">
         <div id="profileAlert" class="field-error"></div>
 
@@ -1234,6 +1325,8 @@
               <label for="phone">Phone</label>
               <div class="input-wrapper"><input type="text" id="phone" placeholder="+91 90000 00000" /></div>
             </div>
+
+</div>
             <div class="form-group">
               <label for="workLocation">Work location</label>
               <div class="input-wrapper"><input type="text" id="workLocation" placeholder="e.g. Bengaluru / Remote" /></div>
@@ -2143,6 +2236,79 @@
       <span style="width: 10px; height: 10px; background-color: #22c55e; border: 2px solid #ffffff; border-radius: 50%; position: absolute; top: 10px; left: 28px; box-shadow: 0 0 8px #22c55e;"></span>
       <span>AI Assistant</span>
     </button>
+    <section class="view" id="trackerView">
+
+    <div class="view-header">
+        <h1>🎯 Daily Wellness Tracker</h1>
+        <p>Complete today's wellness activities and earn rewards.</p>
+    </div>
+
+    <div class="panel">
+
+        <div id="trackerSummaryCards">
+
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Today's AI Wellness Plan</h2>
+
+        <div id="todayTaskContainer">
+
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Today's Progress</h2>
+
+        <div id="todayProgressContainer">
+
+        </div>
+
+    </div>
+
+</section>
+<!-- =====================================================
+     LEADERBOARD VIEW
+===================================================== -->
+
+<section class="view" id="leaderboardView">
+
+    <div class="view-header">
+        <h1>🏆 Wellness Leaderboard</h1>
+        <p>See employee rankings based on wellness activity and points.</p>
+    </div>
+
+    <div class="panel">
+
+        <div id="leaderboardContainer">
+            <p class="empty-state">Loading leaderboard...</p>
+        </div>
+
+    </div>
+
+</section>
+
+<section class="view" id="leaderboardView">
+
+    <div class="view-header">
+        <h1>🏆 Leaderboard</h1>
+        <p>Top wellness performers.</p>
+    </div>
+
+    <div class="panel">
+
+        <h2>Leaderboard</h2>
+
+        <p>Leaderboard module is under development.</p>
+
+    </div>
+
+</section>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -2208,12 +2374,113 @@
         try {
           const recordsRes = await listHealthRecords(token);
           cachedEmpRecords = recordsRes.records || [];
+          console.log("Health Records:", recordsRes);
+console.log("Cached:", cachedEmpRecords);
+          updateWellnessScore();
           renderEmployeeAnalyticsView();
         } catch (err) {
           console.error("Employee analytics load error:", err);
         }
       }
+function loadGreeting() {
 
+    const greeting = document.getElementById("greetingText");
+    const sub = document.getElementById("greetingSubText");
+    const date = document.getElementById("todayDate");
+
+    if (!greeting || !sub || !date) return;
+
+    const now = new Date();
+    const hour = now.getHours();
+
+    if (hour < 12) {
+        greeting.innerHTML = "Good Morning 👋";
+        sub.innerHTML = "Start your day with positive energy.";
+    } else if (hour < 17) {
+        greeting.innerHTML = "Good Afternoon ☀️";
+        sub.innerHTML = "Hope your work is going great.";
+    } else {
+        greeting.innerHTML = "Good Evening 🌙";
+        sub.innerHTML = "Take care of your wellness before ending the day.";
+    }
+
+    date.innerHTML = now.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    });
+}
+function updateWellnessScore() {
+
+    const scoreElement = document.getElementById("wellnessScore");
+    const statusElement = document.getElementById("wellnessStatus");
+
+    // No health records yet
+    if (!cachedEmpRecords || cachedEmpRecords.length === 0) {
+
+        scoreElement.textContent = "--";
+        statusElement.textContent = "No Health Data";
+        statusElement.style.color = "#6b7280";
+
+        return;
+    }
+
+    // Latest health record
+    const latest = cachedEmpRecords[0];
+
+    const score = latest.healthScore || latest.health_score || 0;
+
+    scoreElement.textContent = score;
+
+    if (score >= 90) {
+        statusElement.textContent = "Excellent";
+        statusElement.style.color = "green";
+    }
+    else if (score >= 75) {
+        statusElement.textContent = "Good";
+        statusElement.style.color = "#16a34a";
+    }
+    else if (score >= 50) {
+        statusElement.textContent = "Average";
+        statusElement.style.color = "#f59e0b";
+    }
+    else {
+        statusElement.textContent = "Needs Attention";
+        statusElement.style.color = "red";
+    }
+}
+function updateProfileCompletion() {
+
+    const fields = [
+        "fullName",
+        "employeeCode",
+        "designation",
+        "department",
+        "dateOfJoining",
+        "phone",
+        "workLocation"
+    ];
+
+    let completed = 0;
+
+    fields.forEach(id => {
+
+        const field = document.getElementById(id);
+
+        if (field && field.value.trim() !== "") {
+            completed++;
+        }
+
+    });
+
+    const percentage = Math.round((completed / fields.length) * 100);
+
+    document.getElementById("profileCompletionText").textContent = percentage + "%";
+
+    document.getElementById("profileCompletionBar").style.width = percentage + "%";
+
+}
       function renderEmployeeAnalyticsView() {
         let records = cachedEmpRecords.slice();
         if (currentEmpRange === "7") {
@@ -2538,6 +2805,7 @@
               Your personal productivity index is current at ${prod} with a stress status of ${stress}. Keep maintaining your active daily check-ins!
             </div>
           </body>
+          
           </html>
         `;
 
@@ -2553,6 +2821,33 @@
         clearSession();
         window.location.href = "login.html";
       });
+      loadGreeting();
+      loadProfile();
+[
+    "fullName",
+    "employeeCode",
+    "designation",
+    "department",
+    "dateOfJoining",
+    "phone",
+    "workLocation"
+].forEach(id => {
+
+    const el = document.getElementById(id);
+
+    if (!el) return;
+
+    el.addEventListener("input", () => {
+        updateWellnessScore();
+        updateProfileCompletion();
+    });
+
+    el.addEventListener("change", () => {
+        updateWellnessScore();
+        updateProfileCompletion();
+    });
+
+});
 
       document.querySelectorAll(".nav-item").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -2881,6 +3176,12 @@
             document.getElementById("dateOfJoining").value = data.profile.dateOfJoining || "";
             document.getElementById("phone").value = data.profile.phone || "";
             document.getElementById("workLocation").value = data.profile.workLocation || "";
+            updateProfileCompletion();
+
+const recordsRes = await listHealthRecords(token);
+cachedEmpRecords = recordsRes.records || [];
+
+updateWellnessScore();
 
             // Populate sidebar profile card
             if (data.profile.fullName) {
@@ -2936,6 +3237,11 @@
 
       // Large profile pic overlay → open preview
       document.getElementById("picPreviewOverlay").addEventListener("click", openPhotoPreview);
+      document.getElementById("sidebarProfileCard").addEventListener("click", () => {
+    document.querySelector(
+        '.nav-item[data-view="personalInfoView"]'
+    ).click();
+});
 
       function setAvatarImage(filename) {
         currentPhotoUrl = `/api/profile/picture/${filename}`;
@@ -3169,6 +3475,7 @@
             }
           }
           renderRecords(data.records);
+          updateWellnessScore();
         } catch (err) {
           recordsContainer.innerHTML = `<p class="empty-state">Couldn't load your history: ${err.message}</p>`;
         }
@@ -4919,6 +5226,65 @@
               </div>
             `;
           }).join("");
+           const highlightTask = sessionStorage.getItem(
+            "highlightRecommendationTask"
+          );
+
+          const highlightCategory = sessionStorage.getItem(
+            "highlightRecommendationCategory"
+          );
+
+          if (highlightTask) {
+
+            const cards = grid.querySelectorAll(".rec-card");
+            let matchedCard = null;
+
+            cards.forEach(card => {
+
+              const cardText = card.textContent
+                .trim()
+                .toLowerCase();
+
+              const taskText = highlightTask
+                .trim()
+                .toLowerCase();
+
+              if (cardText.includes(taskText)) {
+                matchedCard = card;
+              }
+
+            });
+
+            if (matchedCard) {
+
+              setTimeout(() => {
+
+                matchedCard.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center"
+                });
+
+                matchedCard.classList.add(
+                  "tracker-recommendation-highlight"
+                );
+
+                setTimeout(() => {
+                  matchedCard.classList.remove(
+                    "tracker-recommendation-highlight"
+                  );
+                }, 4000);
+
+              }, 300);
+            }
+
+            sessionStorage.removeItem(
+              "highlightRecommendationTask"
+            );
+
+            sessionStorage.removeItem(
+              "highlightRecommendationCategory"
+            );
+          }
 
           timeline.innerHTML = data.schedule.map((step) => `
             <div class="timeline-item">
@@ -4929,6 +5295,7 @@
               </div>
             </div>
           `).join("");
+
 
           const checklistKey = `wellness_commits_${data.record_date}`;
           const savedStates = JSON.parse(localStorage.getItem(checklistKey) || "{}");
@@ -6090,5 +6457,7 @@
       loadProfile();
     })();
   </script>
+  <script src="js/tracker.js"></script>
+  <script src="js/leaderboard.js?v=2"></script>
 </body>
 </html>

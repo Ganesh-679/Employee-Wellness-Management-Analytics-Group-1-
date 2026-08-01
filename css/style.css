@@ -1789,6 +1789,7 @@ body.dark-theme .bg-glow-blob.blob-3 {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+.avatar-upload-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -2535,4 +2536,339 @@ body.dark-theme .sim-score-number {
   font-size: 12px;
   line-height: 1.5;
   color: var(--ink-700);
+}
+/* ===========================
+   TRACKER MODULE
+=========================== */
+
+.metric-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.metric-card{
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 6px 20px rgba(0,0,0,.05);
+    transition:.3s;
+}
+
+.metric-card:hover{
+    transform:translateY(-5px);
+}
+
+.metric-card h3{
+    margin:0;
+    font-size:15px;
+    color:#6b7280;
+}
+
+.metric-card h1{
+    margin-top:12px;
+    font-size:34px;
+    color:#0f766e;
+}
+/* =====================================================
+   TRACKER MODULE
+===================================================== */
+
+.tracker-metric-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    margin-top:10px;
+}
+
+.tracker-metric-card{
+    background:#ffffff;
+    border:1px solid #dbe5ea;
+    border-radius:16px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.05);
+    transition:.3s;
+}
+
+.tracker-metric-card:hover{
+    transform:translateY(-5px);
+}
+
+.tracker-metric-card h3{
+    margin:0;
+    font-size:16px;
+    color:#555;
+}
+
+.tracker-metric-card h1{
+    margin-top:12px;
+    font-size:34px;
+    color:#0f766e;
+}
+
+@media(max-width:1000px){
+
+.tracker-metric-grid{
+    grid-template-columns:repeat(2,1fr);
+}
+
+}
+
+@media(max-width:650px){
+
+.tracker-metric-grid{
+    grid-template-columns:1fr;
+}
+
+}
+/* ===========================
+   TRACKER TASKS
+=========================== */
+
+.tracker-task-card{
+
+    background:#fff;
+
+    border:1px solid #d9e2e8;
+
+    border-radius:16px;
+
+    padding:20px;
+
+    margin-bottom:20px;
+
+    box-shadow:0 5px 16px rgba(0,0,0,.05);
+
+}
+
+.tracker-task-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:12px;
+
+}
+
+.tracker-priority{
+
+    padding:6px 12px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:bold;
+
+}
+
+.tracker-priority.high{
+
+    background:#ffe5e5;
+
+    color:#d32f2f;
+
+}
+
+.tracker-priority.medium{
+
+    background:#fff5d6;
+
+    color:#c79200;
+
+}
+
+.tracker-priority.low{
+
+    background:#e7f8eb;
+
+    color:#2e7d32;
+
+}
+
+.tracker-task-footer{
+
+    display:flex;
+
+    gap:12px;
+
+    margin-top:18px;
+
+}
+/* ==========================================================
+   DAILY TRACKER - TODAY'S PROGRESS
+========================================================== */
+
+.tracker-progress-wrapper {
+    padding: 10px 0;
+}
+
+.tracker-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.tracker-progress-header h3 {
+    margin: 0;
+    color: #064e3b;
+}
+
+.tracker-progress-header span {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.tracker-progress-bar {
+    width: 100%;
+    height: 14px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 22px;
+}
+
+.tracker-progress-fill {
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        #0f766e,
+        #10b981
+    );
+    border-radius: 20px;
+    transition: width 0.5s ease;
+}
+
+.tracker-progress-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.tracker-progress-stats div {
+    padding: 16px;
+    text-align: center;
+    border: 1px solid #dbe4ea;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.tracker-progress-stats strong {
+    display: block;
+    font-size: 20px;
+    color: #087f6b;
+    margin-bottom: 5px;
+}
+
+.tracker-progress-stats span {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.tracker-completed-list {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.tracker-completed-list h3 {
+    margin-bottom: 12px;
+    color: #064e3b;
+}
+
+.tracker-completed-list p {
+    margin: 8px 0;
+    color: #475569;
+}
+/* ==========================================================
+   LEADERBOARD
+========================================================== */
+
+.leaderboard-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.leaderboard-table th {
+    padding: 18px;
+    text-align: left;
+    background: #0f5148;
+    color: white;
+    font-weight: 600;
+}
+
+.leaderboard-table td {
+    padding: 18px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.leaderboard-table tbody tr:hover {
+    background: #f3faf8;
+}
+
+.leaderboard-rank {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.current-user-row {
+    background: #e8f8f3 !important;
+    border-left: 5px solid #119c7e;
+}
+
+.you-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    background: #119c7e;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+}
+/* =====================================================
+   DAILY TRACKER -> RECOMMENDATION HIGHLIGHT
+===================================================== */
+
+.tracker-recommendation-highlight {
+    border: 3px solid #10b981 !important;
+
+    box-shadow:
+        0 0 0 5px rgba(16, 185, 129, 0.15),
+        0 12px 35px rgba(16, 185, 129, 0.35) !important;
+
+    transform: scale(1.025);
+
+    animation: trackerRecommendationPulse 1s ease-in-out 3;
+}
+
+@keyframes trackerRecommendationPulse {
+
+    0%, 100% {
+        box-shadow:
+            0 0 0 4px rgba(16, 185, 129, 0.15),
+            0 10px 30px rgba(16, 185, 129, 0.25);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 10px rgba(16, 185, 129, 0.25),
+            0 15px 40px rgba(16, 185, 129, 0.45);
+    }
 }

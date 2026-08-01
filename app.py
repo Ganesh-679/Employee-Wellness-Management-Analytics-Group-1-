@@ -2,6 +2,8 @@ import os
 from flask import Flask, jsonify, send_from_directory
 from config import Config
 from extensions import db, bcrypt, jwt, cors, limiter
+from routes.tracker import tracker_bp
+from routes.leaderboard import leaderboard_bp
 
 from models import (
     User,
@@ -55,6 +57,8 @@ def create_app():
     app.register_blueprint(recommendations_bp)
     app.register_blueprint(sentiment_bp)
     app.register_blueprint(chatbot_bp)
+    app.register_blueprint(tracker_bp)
+    app.register_blueprint(leaderboard_bp)
 
     @app.route("/")
     def serve_index():
@@ -97,6 +101,25 @@ app = create_app()
 with app.app_context():
     from seed_default_accounts import ensure_default_accounts
     ensure_default_accounts()
+
+    # Initialize Daily Tracker database tables
+    schema_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "tracker_schema.sql"
+    )
+
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            tracker_schema = f.read()
+
+        connection = db.engine.raw_connection()
+
+        try:
+            connection.executescript(tracker_schema)
+            connection.commit()
+            print("Daily Tracker database tables initialized successfully!")
+        finally:
+            connection.close()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
