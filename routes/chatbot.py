@@ -10,7 +10,8 @@ from models import (
     HealthRecord,
     ChatMessage,
     WellnessReminder,
-    HealthCheckupSchedule
+    HealthCheckupSchedule,
+    MedicalReport
 )
 
 chatbot_bp = Blueprint("chatbot", __name__, url_prefix="/api/chatbot")
@@ -21,41 +22,309 @@ def get_current_user(user_id):
     return User.query.get(user_id)
 
 
-def query_gemini_api(prompt, emp_name, health_score, sleep_hrs, stress_lvl):
-    """Query Google Gemini API for deep conversational wellness responses.
-    Tries gemini-2.0-flash first, then gemini-2.0-flash-lite as fallback."""
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key or api_key == "your_gemini_api_key_here":
-        return None
+# --- Agentic State Graph AI Coach Engine Node Pipeline ---
 
-    import urllib.request
-    import urllib.error
-    import json
+def memory_node(state):
+    """NODE 1: Memory & Context Synthesizer Node
+    Prepares active study context, chat history, and employee database vitals."""
+    user_id = state["user_id"]
+    
+    # Fetch user profile & latest health records
+    profile = EmployeeProfile.query.filter_by(user_id=user_id).first()
+    latest_record = HealthRecord.query.filter_by(user_id=user_id).order_by(HealthRecord.record_date.desc()).first()
+    
+    state["vitals"]["emp_name"] = profile.full_name if profile and profile.full_name else "Employee"
+    state["vitals"]["health_score"] = latest_record.health_score if latest_record else 85
+    state["vitals"]["sleep_hrs"] = latest_record.sleep_hours if latest_record else 7.5
+    state["vitals"]["stress_lvl"] = latest_record.stress_level if latest_record else "Low"
 
-    system_instruction = (
-        f"You are a friendly 24/7 AI Wellness & Health Assistant coaching {emp_name}. "
-        f"Employee context: Health Score {health_score}/100, Sleep Average {sleep_hrs} hrs, Stress Level {stress_lvl}. "
-        f"STRICT RULE: You MUST ONLY answer questions related to health, wellness, fitness, nutrition, sleep, stress, "
-        f"mental health, exercise, medical topics, employee wellbeing, or this wellness management project. "
-        f"If the user asks anything unrelated (celebrities, politics, general knowledge, entertainment, etc.), "
-        f"politely decline and say: 'I'm your dedicated Wellness Assistant and can only help with health & wellness topics.' "
-        f"Then suggest what you CAN help with. "
-        f"Provide supportive, concise guidance with bullet points and friendly emojis."
+    # Load recent chat messages for conversational memory context
+    history_msgs = ChatMessage.query.filter_by(user_id=user_id).order_by(ChatMessage.timestamp.desc()).limit(6).all()
+    history_msgs.reverse()
+    state["history"] = [{"role": m.sender, "content": m.text} for m in history_msgs]
+    
+    state["context_summary"] = (
+        f"Employee: {state['vitals']['emp_name']} | Health Score: {state['vitals']['health_score']}/100 | "
+        f"Sleep Avg: {state['vitals']['sleep_hrs']} hours | Stress Balance: {state['vitals']['stress_lvl']}"
     )
+    return state
 
-    payload = {
-        "contents": [{
-            "parts": [{"text": f"{system_instruction}\n\nEmployee Query: {prompt}"}]
-        }]
-    }
-    payload_bytes = json.dumps(payload).encode("utf-8")
 
-    # Try multiple models in order of preference
-    models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite"]
-
-    for model_name in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+def router_node(state):
+    """NODE 2: Router & Intent Classification Node
+    Uses Gemini Generative Model to classify user intent, or falls back to rules."""
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    has_gemini = bool(api_key and api_key != "your_gemini_api_key_here")
+    
+    if has_gemini:
+        system_instruction = (
+            "You are the Intent & Context Router for an AI Wellness Coach.\n"
+            "Analyze the user's message and classify the intent into exactly one of these categories:\n"
+            "- VIEW_HEALTH_RECORD: User wants to see their health record data, vitals, logs, weight/height metrics, or bp/heart rate.\n"
+            "- VIEW_MEDICAL_REPORTS: User wants to see, list, fetch, or access their uploaded medical reports, PDFs, checkup summaries, or doctor lab results.\n"
+            "- SCHEDULE_ACTION: User asks to book/schedule a checkup, or set a reminder (water, stretch, sleep).\n"
+            "- TRACK_GOALS: User asks about their goals, progress, milestones, or how they are doing.\n"
+            "- WELLNESS_ADVICE: User asks for tips or coaching on diet, nutrition, sleep hygiene, stress, exercise, or ergonomics.\n"
+            "- EMPATHY_SUPPORT: User expresses feeling down, sad, lonely, depressed, stressed, or burnt out.\n"
+            "- GENERAL_CONVERSATION: Small talk, greetings, model details, or warm chat.\n"
+            "- OFF_TOPIC: Unrelated general questions (celebrities, politics, sports, general knowledge).\n\n"
+            "Return ONLY a JSON object with this format:\n"
+            "{\"intent\": \"CATEGORY_NAME\", \"topic\": \"Short Topic Summary\"}"
+        )
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"{system_instruction}\n\nUser message: \"{state['message']}\"\nHistory: {json.dumps(state['history'])}"}]
+            }]
+        }
         try:
+            payload_bytes = json.dumps(payload).encode("utf-8")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+            req = urllib.request.Request(
+                url,
+                data=payload_bytes,
+                headers={"Content-Type": "application/json", "x-goog-api-key": api_key}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                raw_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                cleaned = raw_text.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(cleaned)
+                state["intent"] = parsed.get("intent", "GENERAL_CONVERSATION")
+                state["current_topic"] = parsed.get("topic", "General Well-being")
+                return state
+        except Exception as e:
+            print(f"Gemini Router warning: {e}")
+
+    # Local Socratic Keyword Fallback
+    p_lower = state["message"].lower()
+    if any(k in p_lower for k in ["medical report", "my report", "uploaded report", "my reports", "my pdf", "blood test report", "doctor report", "reports"]):
+        state["intent"] = "VIEW_MEDICAL_REPORTS"
+        state["current_topic"] = "Medical Report"
+    elif any(k in p_lower for k in ["health record", "health data", "my record", "my data", "blood pressure", "heart rate", "bp log", "vitals", "systolic", "diastolic", "my bp", "my height", "my weight", "bmi", "past bmi", "body mass index", "my sleep", "water intake", "my log", "my logs", "check-in"]):
+        state["intent"] = "VIEW_HEALTH_RECORD"
+        state["current_topic"] = "Health Record"
+    elif any(k in p_lower for k in ["schedule checkup", "book checkup", "doctor appointment", "health checkup", "schedule appointment"]):
+        state["intent"] = "SCHEDULE_ACTION"
+        state["current_topic"] = "Preventive Checkup"
+    elif any(k in p_lower for k in ["set reminder", "remind me", "water reminder", "stretch reminder", "hydration reminder"]):
+        state["intent"] = "SCHEDULE_ACTION"
+        state["current_topic"] = "Wellness Reminder"
+    elif any(k in p_lower for k in ["track goal", "my goals", "progress", "milestone", "score", "how am i doing"]):
+        state["intent"] = "TRACK_GOALS"
+        state["current_topic"] = "Goal Performance"
+    elif any(k in p_lower for k in ["diet", "food", "nutrition", "calories", "calorie", "body fat", "meal"]):
+        state["intent"] = "WELLNESS_ADVICE"
+        state["current_topic"] = "Nutrition"
+    elif any(k in p_lower for k in ["sleep", "insomnia", "tired", "rest", "night"]):
+        state["intent"] = "WELLNESS_ADVICE"
+        state["current_topic"] = "Sleep Hygiene"
+    elif any(k in p_lower for k in ["stress", "anxiety", "overwhelmed", "workload", "burnout", "exhausted"]):
+        state["intent"] = "WELLNESS_ADVICE"
+        state["current_topic"] = "Stress Coaching"
+    elif any(k in p_lower for k in ["exercise", "workout", "gym", "fitness", "steps", "active", "stretch", "ergonomics"]):
+        state["intent"] = "WELLNESS_ADVICE"
+        state["current_topic"] = "Physical Fitness & Ergonomics"
+    elif any(k in p_lower for k in ["sad", "depressed", "unhappy", "lonely", "feeling low", "feeling down", "bad day", "upset"]):
+        state["intent"] = "EMPATHY_SUPPORT"
+        state["current_topic"] = "Emotional Wellness"
+    elif any(k in p_lower for k in ["hello", "hi", "hey", "who are you", "what are you", "model"]):
+        state["intent"] = "GENERAL_CONVERSATION"
+        state["current_topic"] = "General Conversation"
+    else:
+        state["intent"] = "WELLNESS_ADVICE"
+        state["current_topic"] = "General Health Inquiry"
+    return state
+
+
+def resolve_contextual_navigation(message, history):
+    p_lower = message.lower()
+    # Check if the query is a relative navigation request
+    relative_keywords = ["that page", "go there", "take me there", "open it", "navigate to it", "show it", "navigate me there", "view it"]
+    if any(rk in p_lower for rk in relative_keywords) or p_lower.strip() in ["navigate", "open", "show", "go"]:
+        # Scan history from latest to oldest
+        for msg in reversed(history):
+            text = msg["content"].lower()
+            if any(k in text for k in ["stress", "mental", "sentiment", "anxiety", "depressed", "mood", "cortisol"]):
+                return "sentimentView", "Mental Health & Sentiment"
+            if any(k in text for k in ["bmi", "weight", "height", "blood pressure", "heart rate", "bp", "vital"]):
+                return "healthDataView", "Health Data"
+            if any(k in text for k in ["report", "pdf"]):
+                return "reportsView", "Medical Reports"
+            if any(k in text for k in ["risk", "prediction", "cardiovascular", "diabetes"]):
+                return "riskView", "Wellness Risk Prediction"
+            if any(k in text for k in ["recommendation", "advice", "tips", "routine"]):
+                return "recommendationsView", "Wellness Recommendations"
+            if any(k in text for k in ["tracker", "checklist", "water", "stretch", "sleep reminder", "remind"]):
+                return "trackerView", "Daily Tracker"
+            if any(k in text for k in ["leaderboard", "rank", "score"]):
+                return "leaderboardView", "Leaderboard"
+    return None, None
+
+
+def action_tool_node(state):
+    """NODE 3: Action Tool Node
+    Executes database operations and maps navigation/view commands to UI trigger hooks."""
+    intent = state["intent"]
+    p_lower = state["message"].lower()
+    user_id = state["user_id"]
+    history = state.get("history", [])
+    
+    # 1. Contextual Navigation Resolution
+    nav_view, nav_label = resolve_contextual_navigation(state["message"], history)
+    if nav_view:
+        state["action"] = "navigate"
+        state["action_data"] = {"navigate": nav_view}
+        state["intent"] = "NAVIGATION_CONFIRMATION"
+        state["current_topic"] = nav_label
+        return state
+
+    # 2. Page/View Navigation Triggers
+    if any(k in p_lower for k in ["navigate to", "open page", "go to page", "show page", "view page", "show my", "show me", "canyou show", "canyou show my", "where is", "open tab"]):
+        if "health record" in p_lower or "health data" in p_lower or "vital" in p_lower or "bmi" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "healthDataView"}
+            return state
+        elif "risk" in p_lower or "prediction" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "riskView"}
+            return state
+        elif "report" in p_lower or "medical" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "reportsView"}
+            return state
+        elif "recommendation" in p_lower or "advice" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "recommendationsView"}
+            return state
+        elif "sentiment" in p_lower or "mental" in p_lower or "mood" in p_lower or "stress" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "sentimentView"}
+            return state
+        elif "analytics" in p_lower or "chart" in p_lower or "graph" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "employeeAnalyticsView"}
+            return state
+        elif "tracker" in p_lower or "checklist" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "trackerView"}
+            return state
+        elif "leaderboard" in p_lower or "rank" in p_lower or "score" in p_lower:
+            state["action"] = "navigate"
+            state["action_data"] = {"navigate": "leaderboardView"}
+            return state
+
+    if intent == "VIEW_HEALTH_RECORD":
+        state["action"] = "navigate"
+        state["action_data"] = {"navigate": "healthDataView"}
+    elif intent == "VIEW_MEDICAL_REPORTS":
+        state["action"] = "navigate"
+        state["action_data"] = {"navigate": "reportsView"}
+    elif intent == "SCHEDULE_ACTION":
+        if any(k in p_lower for k in ["checkup", "appointment"]):
+            target_date = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+            checkup = HealthCheckupSchedule(
+                user_id=user_id,
+                checkup_type="Comprehensive Preventive Health Screening",
+                scheduled_date=target_date,
+                status="Scheduled",
+                notes="Booked via AI Socratic Wellness Coach"
+            )
+            db.session.add(checkup)
+            db.session.commit()
+            state["action_data"] = {"checkup": checkup.to_dict()}
+            state["action"] = "scheduled_checkup"
+        elif any(k in p_lower for k in ["reminder", "remind"]):
+            reminder_type = "hydration"
+            time_str = "Every 2 hours"
+            title = "💧 Drink Water & Stay Hydrated"
+    
+            if "stretch" in p_lower or "break" in p_lower:
+                reminder_type = "stretch"
+                time_str = "Every 60 mins"
+                title = "🧘 Take a 5-Min Ergonomic Stretch Break"
+            elif "sleep" in p_lower or "bed" in p_lower:
+                reminder_type = "sleep"
+                time_str = "Daily at 10:30 PM"
+                title = "💤 Prepare for Restorative Sleep"
+    
+            reminder = WellnessReminder(
+                user_id=user_id,
+                title=title,
+                reminder_type=reminder_type,
+                time_str=time_str,
+                is_active=True
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            state["action_data"] = {"reminder": reminder.to_dict()}
+            state["action"] = "set_reminder"
+            
+    return state
+
+
+def specialist_node(state):
+    """NODE 4: Specialist Node (Deep Socratic Reasoning Engine)
+    Generates tailored, conversational, step-by-step coaching feedback."""
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    has_gemini = bool(api_key and api_key != "your_gemini_api_key_here")
+    
+    emp_name = state["vitals"]["emp_name"]
+    health_score = state["vitals"]["health_score"]
+    sleep_hrs = state["vitals"]["sleep_hrs"]
+    stress_lvl = state["vitals"]["stress_lvl"]
+    user_id = state["user_id"]
+    
+    latest_record = HealthRecord.query.filter_by(user_id=user_id).order_by(HealthRecord.record_date.desc()).first()
+    reports = MedicalReport.query.filter_by(user_id=user_id).order_by(MedicalReport.uploaded_at.desc()).all()
+    
+    if has_gemini:
+        # Load complete context from DB to inject into Gemini prompt
+        db_context = "No health logs found."
+        if latest_record:
+            bp_systolic = latest_record.bp_systolic if latest_record.bp_systolic else "Not logged"
+            bp_diastolic = latest_record.bp_diastolic if latest_record.bp_diastolic else "Not logged"
+            resting_hr = latest_record.resting_heart_rate if latest_record.resting_heart_rate else "Not logged"
+            water_liters = latest_record.water_intake_liters if latest_record.water_intake_liters else "Not logged"
+            db_context = (
+                f"Employee's latest database HealthRecord details:\n"
+                f"- Log Date: {latest_record.record_date}\n"
+                f"- Height: {latest_record.height_cm} cm | Weight: {latest_record.weight_kg} kg\n"
+                f"- BMI: {latest_record.bmi:.1f} ({latest_record.bmi_category})\n"
+                f"- Blood Pressure: {bp_systolic}/{bp_diastolic} mmHg\n"
+                f"- Resting Heart Rate: {resting_hr} bpm\n"
+                f"- Sleep Hours: {latest_record.sleep_hours} hrs/night\n"
+                f"- Water Intake: {water_liters} Liters/day\n"
+                f"- Stress Level: {latest_record.stress_level}\n"
+                f"- Exercise Frequency: {latest_record.exercise_frequency} ({latest_record.exercise_minutes_per_week} mins/week)\n"
+                f"- Attendance status: {latest_record.attendance_status}"
+            )
+        
+        reports_context = "No uploaded medical reports found."
+        if reports:
+            reports_context = "Uploaded medical reports list:\n" + "\n".join([f"- Name: {r.report_name}, Type: {r.report_type}, Uploaded: {r.uploaded_at}" for r in reports])
+            
+        system_instruction = (
+            f"You are a friendly, highly professional 24/7 AI Socratic Wellness Coach coaching {emp_name}.\n"
+            f"Employee context: Health Score {health_score}/100, Sleep Average {sleep_hrs} hrs, Stress Level {stress_lvl}.\n"
+            f"Classified Intent: {state['intent']}. Classified Topic: {state['current_topic']}.\n"
+            f"{db_context}\n"
+            f"{reports_context}\n\n"
+            f"ROLE STYLE: You use a Socratic coaching style. Do not just spit out long lists of answers. "
+            f"Instead, guide {emp_name} step-by-step. Ask brief, open-ended questions about their habits, sleep patterns, "
+            f"stress triggers, or exercise routines to help them discover their own path to better health.\n"
+            f"Provide short, supportive, concise guidance with 1-2 bullet points and friendly emojis, then ask an engaging follow-up question.\n"
+            f"STRICT RULE: You MUST ONLY answer questions related to health, wellness, fitness, nutrition, sleep, stress, "
+            f"mental health, exercise, medical topics, employee wellbeing, or this wellness management project. "
+            f"If the user asks anything unrelated, politely decline and steer them back to wellness."
+        )
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"{system_instruction}\n\nEmployee Query: {state['message']}"}]
+            }]
+        }
+        try:
+            payload_bytes = json.dumps(payload).encode("utf-8")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
             req = urllib.request.Request(
                 url,
                 data=payload_bytes,
@@ -67,204 +336,215 @@ def query_gemini_api(prompt, emp_name, health_score, sleep_hrs, stress_lvl):
                 if candidates:
                     text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     if text:
-                        return text.strip()
-        except urllib.error.HTTPError as http_err:
-            print(f"Gemini API ({model_name}) HTTP {http_err.code}: {http_err.reason}")
-            continue  # Try next model
+                        state["reply"] = text.strip()
+                        return state
         except Exception as exc:
-            print(f"Gemini API ({model_name}) warning: {exc}")
-            continue  # Try next model
+            print(f"Gemini Specialist warning: {exc}")
 
-    return None
-
-
-def process_nlp_intent(user_id, prompt):
-    """Context-aware Smart NLP Chatbot Engine for Employee Wellness."""
-    p_lower = prompt.lower().strip()
-
-    # Retrieve user profile & latest health record for personalized context
-    profile = EmployeeProfile.query.filter_by(user_id=user_id).first()
-    latest_record = HealthRecord.query.filter_by(user_id=user_id).order_by(HealthRecord.record_date.desc()).first()
-
-    emp_name = profile.full_name if profile and profile.full_name else "Employee"
-    health_score = latest_record.health_score if latest_record else 85
-    sleep_hrs = latest_record.sleep_hours if latest_record else 7.5
-    stress_lvl = latest_record.stress_level if latest_record else "Low"
-
-    # 0. Model Identity Intent
-    if any(k in p_lower for k in ["which model", "what model", "which ai", "model are you", "what ai"]):
-        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-        has_gemini = bool(api_key and api_key != "your_gemini_api_key_here")
-        
-        active_model = "**Google Gemini 2.0 Flash (Generative AI)** 🤖" if has_gemini else "**Smart Local Hybrid NLP Engine** 🌿"
-        reply = (
-            f"🧠 **AI Model Information:**\n\n"
-            f"I am powered by {active_model}.\n\n"
-            f"• **Active Mode**: {'Online Cloud Generative AI (gemini-2.0-flash)' if has_gemini else 'Offline Local Medical NLP Engine'}\n"
-            f"• **API Status**: {'Gemini 2.0 Key Configured' if has_gemini else 'Using Local Fallback Engine'}\n"
-            f"• **Capabilities**: Action scheduling, wellness reminders, goal tracking, and personalized health coaching.\n"
-            f"• **Context Awareness**: Connected to your profile ({emp_name}) & Health Metrics (Health Score: {health_score}/100)."
+    # Fallback Socratic Response Generator (Local Rules)
+    intent = state["intent"]
+    topic = state["current_topic"]
+    
+    if intent == "NAVIGATION_CONFIRMATION":
+        state["reply"] = (
+            f"🚀 **Opening the {topic} section for you!**\n\n"
+            f"I have automatically switched the dashboard view to the **{topic}** page as requested.\n\n"
+            f"💬 *Would you like me to walk you through any details or trends on this page?*"
         )
-        return "model_info", reply, {}
-
-
-
-    # 1. Schedule Health Checkup Intent
-    if any(k in p_lower for k in ["schedule checkup", "book checkup", "doctor appointment", "health checkup", "schedule appointment"]):
-        target_date = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
-        
-        checkup = HealthCheckupSchedule(
-            user_id=user_id,
-            checkup_type="Comprehensive Preventive Health Screening",
-            scheduled_date=target_date,
-            status="Scheduled",
-            notes="Booked via AI Wellness Assistant"
-        )
-        db.session.add(checkup)
-        db.session.commit()
-
-        reply = (
-            f"📅 **Health Checkup Scheduled Successfully!**\n\n"
-            f"Hello {emp_name}, I have scheduled your **Comprehensive Preventive Health Screening** for **{target_date}**.\n"
-            f"You will receive a notification reminder 24 hours prior to your appointment."
-        )
-        return "schedule_checkup", reply, {"checkup": checkup.to_dict()}
-
-    # 2. Set Reminder Intent
-    if any(k in p_lower for k in ["set reminder", "remind me", "water reminder", "stretch reminder", "hydration reminder"]):
-        reminder_type = "hydration"
-        time_str = "Every 2 hours"
-        title = "💧 Drink Water & Stay Hydrated"
-
-        if "stretch" in p_lower or "break" in p_lower:
-            reminder_type = "stretch"
-            time_str = "Every 60 mins"
-            title = "🧘 Take a 5-Min Ergonomic Stretch Break"
-        elif "sleep" in p_lower or "bed" in p_lower:
-            reminder_type = "sleep"
-            time_str = "Daily at 10:30 PM"
-            title = "💤 Prepare for Restorative Sleep"
-
-        reminder = WellnessReminder(
-            user_id=user_id,
-            title=title,
-            reminder_type=reminder_type,
-            time_str=time_str,
-            is_active=True
-        )
-        db.session.add(reminder)
-        db.session.commit()
-
-        reply = (
-            f"⏰ **Wellness Reminder Created!**\n\n"
-            f"I have set a new **{title}** reminder ({time_str}).\n"
-            f"Staying consistent with small healthy habits boosts your daily energy index!"
-        )
-        return "set_reminder", reply, {"reminder": reminder.to_dict()}
-
-    # 3. Track Goals & Milestones Intent
-    if any(k in p_lower for k in ["track goal", "my goals", "progress", "milestone", "score", "how am i doing"]):
-        reply = (
+    elif intent == "VIEW_HEALTH_RECORD":
+        all_records = HealthRecord.query.filter_by(user_id=user_id).order_by(HealthRecord.record_date.desc()).all()
+        if all_records:
+            latest = all_records[0]
+            bp_text = f"{latest.bp_systolic}/{latest.bp_diastolic} mmHg" if latest.bp_systolic else "Not logged"
+            hr_text = f"{latest.resting_heart_rate} bpm" if latest.resting_heart_rate else "Not logged"
+            water_text = f"{latest.water_intake_liters} L" if latest.water_intake_liters else "Not logged"
+            
+            reply = (
+                f"📊 **Your Latest Wellness & Health Record Details:**\n\n"
+                f"• **Log Date**: {latest.record_date.strftime('%B %d, %Y')}\n"
+                f"• **Physical Vitals**:\n"
+                f"  - Height: **{latest.height_cm} cm** | Weight: **{latest.weight_kg} kg**\n"
+                f"  - BMI: **{latest.bmi:.1f}** ({latest.bmi_category})\n"
+                f"  - Blood Pressure: **{bp_text}**\n"
+                f"  - Resting Heart Rate: **{hr_text}**\n"
+                f"• **Lifestyle Indicators**:\n"
+                f"  - Sleep Average: **{latest.sleep_hours} hours/night**\n"
+                f"  - Water Intake: **{water_text}**\n"
+                f"  - Stress Balance: **{latest.stress_level}**\n"
+                f"  - Activity Level: **{latest.exercise_frequency}** ({latest.exercise_minutes_per_week} mins/week)\n"
+            )
+            
+            if len(all_records) > 1:
+                trends = []
+                for r in all_records[1:5]:
+                    trends.append(f"- *{r.record_date.strftime('%b %d, %Y')}*: BMI **{r.bmi:.1f}** | BP **{r.bp_systolic}/{r.bp_diastolic}** | Sleep **{r.sleep_hours} hrs**")
+                trend_text = "\n".join(trends)
+                reply += f"\n📈 **Past Records & BMI Trends:**\n{trend_text}\n"
+                
+            reply += (
+                f"\nI have also automatically opened the **Health Data** page for you. "
+                f"💬 *Looking at your BMI and vital logs, what changes or wellness goals do you want to explore next?*"
+            )
+            state["reply"] = reply
+        else:
+            state["reply"] = (
+                f"📊 **Health Record Lookup:**\n\n"
+                f"Hello {emp_name}, I searched your database files but couldn't find any health records logged yet.\n\n"
+                f"I have loaded the **Health Data** tab so you can input your first wellness metrics check-in. "
+                f"💬 *Would you like help calculating your baseline BMI or logging your daily sleep hours?*"
+            )
+    elif intent == "VIEW_MEDICAL_REPORTS":
+        if reports:
+            report_list_md = "\n".join([f"• 📄 **{r.report_name}** ({r.report_type}) - *Uploaded on {r.uploaded_at.strftime('%B %d, %Y')}*" for r in reports])
+            state["reply"] = (
+                f"📋 **Here are your uploaded Medical Reports:**\n\n"
+                f"{report_list_md}\n\n"
+                f"I have also automatically opened the **Medical Reports** section so you can upload new health files or review these PDFs. "
+                f"💬 *Would you like me to explain any clinical values or medical checkup terms?*"
+            )
+        else:
+            state["reply"] = (
+                f"📋 **Medical Reports Lookup:**\n\n"
+                f"Hello {emp_name}, I searched your record files but couldn't find any uploaded medical reports in the database.\n\n"
+                f"I have opened the **Medical Reports** tab for you so you can upload your first PDF. "
+                f"💬 *Would you like to walk through how to upload a report?*"
+            )
+    elif intent == "SCHEDULE_ACTION":
+        if state["action"] == "scheduled_checkup":
+            state["reply"] = (
+                f"📅 **Health Checkup Scheduled Successfully!**\n\n"
+                f"Hello {emp_name}, I have scheduled your **Comprehensive Preventive Health Screening** for next week.\n\n"
+                f"💬 *Preventive care is a great baseline. What specific metrics or checks are you hoping to review with the doctor?*"
+            )
+        else:
+            state["reply"] = (
+                f"⏰ **Wellness Reminder Created!**\n\n"
+                f"I have successfully activated your wellness reminder.\n\n"
+                f"💬 *Consistency with small habits makes a massive difference over time. How do you plan to keep yourself accountable to this new reminder?*"
+            )
+    elif intent == "TRACK_GOALS":
+        state["reply"] = (
             f"🎯 **Personal Health Goal Progress for {emp_name}:**\n\n"
             f"• **Overall Health Score:** {health_score} / 100 ({'Optimal' if health_score >= 80 else 'Moderate'})\n"
             f"• **Sleep Average:** {sleep_hrs} hrs / night (Target: 7.5 hrs)\n"
-            f"• **Stress Balance:** {stress_lvl} Mental Stress\n"
-            f"• **Check-in Streak:** Active Daily Tracking\n\n"
-            f"💡 *Tip: Keep logging your daily metrics under 'My Wellness Check-in' to unlock +200 bonus reward points!*"
+            f"• **Stress Balance:** {stress_lvl} Mental Stress\n\n"
+            f"💬 *Looking at these metrics, which area—sleep, stress, or overall score—do you feel we should tackle together first?*"
         )
-        return "track_goals", reply, {}
-
-    # 4. Motivation & Encouragement Intent
-    if any(k in p_lower for k in ["motivation", "motivate me", "feeling tired", "cheer me up", "quote"]):
-        motivational_quotes = [
-            "🌟 'Your health is an investment, not an expense. Every healthy check-in is a step toward vibrant longevity!'",
-            "⚡ 'Small daily wellness habits compound into extraordinary energy and career performance over time.'",
-            "🌿 'Take a deep breath. Rest is not a reward for work; rest is a prerequisite for high performance.'",
-            "🔥 'Consistency beats intensity! You are doing amazing work prioritizing your physical and mental balance.'"
-        ]
-        quote = random.choice(motivational_quotes)
-        reply = (
-            f"💪 **Personal Wellness Booster for {emp_name}:**\n\n"
-            f"{quote}\n\n"
-            f"Your current Health Score is **{health_score}/100**. Keep pushing forward!"
-        )
-        return "motivation", reply, {}
-
-    # 5. Sleep & Fatigue Advice Intent
-    if any(k in p_lower for k in ["sleep", "insomnia", "tired", "rest", "night"]):
-        reply = (
-            f"💤 **Evidence-Based Sleep Optimization Advice:**\n\n"
-            f"Based on your profile, you average **{sleep_hrs} hours** of sleep per night.\n\n"
-            f"1. **Circadian Hygiene**: Maintain a consistent bedtime within a 30-minute window.\n"
-            f"2. **Blue Light Cutoff**: Discontinue screen time 45 minutes before sleep.\n"
-            f"3. **Optimal Temperature**: Keep your bedroom temperature between 18°C – 20°C (65°F – 68°F).\n"
-            f"4. **Caffeine Window**: Avoid caffeine consumption after 2:00 PM."
-        )
-        return "sleep_advice", reply, {}
-
-    # 5. Emotional Support & Mood Empathy Intent
-    if any(k in p_lower for k in ["sad", "depressed", "unhappy", "lonely", "feeling low", "feeling down", "upset", "crying", "bad day", "blue", "hopeless", "feeling bad"]):
-        reply = (
+    elif intent == "EMPATHY_SUPPORT":
+        state["reply"] = (
             f"🫂 **I'm here for you, {emp_name}.**\n\n"
-            f"I'm sorry to hear that you are feeling sad today. It is completely valid and okay to have low days.\n\n"
-            f"🌿 **Gentle Self-Care Steps for Today:**\n"
-            f"1. **Be Gentle with Yourself**: Prioritize rest and don't pressure yourself today.\n"
-            f"2. **Mindful Pause**: Take 5 slow, deep breaths. Inhale peace, exhale tension.\n"
-            f"3. **Express Feelings**: You can log a quick entry under the *Mental Health & Sentiment* tab to track your emotional wellbeing.\n"
-            f"4. **Support Systems**: Reach out to a trusted colleague, friend, or check our confidential Employee Assistance Program for counseling."
+            f"I'm sorry to hear that you are feeling down or overwhelmed today. It is completely normal to have low-energy days.\n\n"
+            f"• **Micro-Reset**: Taking 5 slow box-breaths can help anchor your nervous system.\n\n"
+            f"💬 *When you're feeling this way, do you find it more helpful to rest quietly, or would you like to walk through a quick, 2-minute breathing exercise together?*"
         )
-        return "emotional_support", reply, {}
-
-    # 6. Stress & Anxiety Management Intent
-    if any(k in p_lower for k in ["stress", "anxiety", "overwhelmed", "workload", "mental", "burnout", "panic", "worried", "exhausted"]):
-        reply = (
-            f"🧠 **Mental Stress & Resilience Coaching:**\n\n"
-            f"Your latest logged stress level is **{stress_lvl}**.\n\n"
-            f"• **Box Breathing Technique**: Inhale for 4s → Hold for 4s → Exhale for 4s → Hold for 4s. Repeat 4 times.\n"
-            f"• **Micro-Breaks**: Take a 5-minute walk outside after every 90 minutes of focused work.\n"
-            f"• **Employee Assistance Program**: You have access to 1-on-1 confidential counseling. Check the Mental Health tab for details."
+    elif intent == "WELLNESS_ADVICE":
+        p_lower = state["message"].lower()
+        
+        # 1. Stress medications / aids (check typo meds/madicine/medecine/drug)
+        if ("stress" in topic.lower() or "stress" in p_lower) and any(w in p_lower for w in ["medicine", "medication", "drug", "pill", "tablet", "prescribe", "madicine", "medecine", "meds", "treatment", "cure"]):
+            state["reply"] = (
+                f"💊 **Stress Medications & Aids:**\n"
+                f"• **Natural/OTC**: Ashwagandha, L-Theanine, Chamomile, or Magnesium Glycinate.\n"
+                f"• **Prescription**: Beta-blockers or SSRIs (consult a medical physician first).\n\n"
+                f"💬 *Would you like me to schedule a preventive health checkup to discuss prescriptions?*"
+            )
+            
+        # 2. Sleep medications / aids
+        elif ("sleep" in topic.lower() or "sleep" in p_lower) and any(w in p_lower for w in ["medicine", "medication", "drug", "pill", "tablet", "prescribe", "madicine", "medecine", "meds", "treatment", "cure", "insomnia"]):
+            state["reply"] = (
+                f"💤 **Sleep Medications & Aids:**\n"
+                f"• **Natural/OTC**: Melatonin, Valerian Root, Chamomile tea, or Magnesium.\n"
+                f"• **Prescription**: Z-drugs or Orexin antagonists (consult a physician first).\n\n"
+                f"💬 *Would you like me to set a sleep hygiene reminder?*"
+            )
+            
+        # 3. Nutrition, diet, food (check typo diet/dit/food/nutrition)
+        elif "nutrition" in topic.lower() or "diet" in topic.lower() or any(w in p_lower for w in ["diet", "food", "nutrition", "meal", "breakfast", "eat", "protein", "dit"]):
+            state["reply"] = (
+                f"🥗 **Nutrition & Diet Guidelines:**\n"
+                f"• **Recommended Foods**: Fatty fish (Omega-3), leafy greens, oats, berries, nuts, and clean proteins.\n"
+                f"• **Avoid**: Processed sugars, simple carbohydrates, and late-night caffeine.\n\n"
+                f"💬 *Would you like me to navigate to the Wellness Recommendations tab?*"
+            )
+            
+        # 4. Exercise & Fitness (gym/workout/exercise)
+        elif "fitness" in topic.lower() or "exercise" in topic.lower() or any(w in p_lower for w in ["gym", "workout", "routine", "exercise", "plan", "fitness", "active", "stretching"]):
+            state["reply"] = (
+                f"🏃 **Exercise & Fitness Plan:**\n"
+                f"• **Cardio**: 20-30 mins of walking, cycling, or jogging 3x a week.\n"
+                f"• **Strength**: Simple bodyweight movements (planks, squats, push-ups).\n\n"
+                f"💬 *Would you like me to set a reminder for a quick workout break?*"
+            )
+            
+        # 5. General Stress
+        elif "stress" in topic.lower() or "stress" in p_lower:
+            state["reply"] = (
+                f"🧠 **Stress Management:**\n"
+                f"• **Breathing**: Try 5 slow box-breaths to reset your nervous system.\n"
+                f"• **Ergonomic**: Take a short 5-minute desk stretch break.\n\n"
+                f"💬 *Do you prefer a physical stretch or a mental breathing pause?*"
+            )
+            
+        # 6. Default Fallback
+        else:
+            state["reply"] = (
+                f"🏃 **Wellness Advice:**\n"
+                f"• **Daily Vitals**: Your current Health Score is **{health_score}/100**.\n"
+                f"• **Actionable**: Log your sleep, keep active, and minimize stress levels.\n\n"
+                f"💬 *What health metric are you focusing on today?*"
+            )
+    elif intent == "GENERAL_CONVERSATION":
+        state["reply"] = (
+            f"🤖 **Hello {emp_name}!**\n\n"
+            f"I am your dedicated **AI Socratic Wellness Coach**. I am designed to help you build positive daily habits, track metrics, schedule preventive appointments, and manage stress.\n\n"
+            f"💬 *What wellness goals or concerns are on your mind today?*"
         )
-        return "stress_advice", reply, {}
-
-    # 7. Exercise & Physical Activity Intent
-    if any(k in p_lower for k in ["exercise", "workout", "gym", "fitness", "steps", "active"]):
-        reply = (
-            f"🏃 **Physical Activity & Ergonomics Guidance:**\n\n"
-            f"Target benchmark: **150+ minutes** of moderate aerobic exercise per week.\n\n"
-            f"• **Desk Ergonomics**: Keep monitor at eye level, elbows at 90°, and feet flat on the floor.\n"
-            f"• **Daily Step Target**: Aim for 8,000 – 10,000 steps daily.\n"
-            f"• **Strength Training**: Incorporate 2 session of resistance/bodyweight exercises weekly."
+    else:
+        state["reply"] = (
+            f"🚫 Hello {emp_name}, I am your **AI Socratic Wellness Coach**.\n\n"
+            f"To get the most out of our session, I focus on health, fitness, and stress goals.\n\n"
+            f"💬 *Which area—sleep, stress, activity, or scheduling a health checkup—would you like to explore today?*"
         )
-        return "exercise_advice", reply, {}
+    return state
 
-    # 8. Diet & Hydration Intent
-    if any(k in p_lower for k in ["diet", "food", "nutrition", "water", "hydration"]):
-        reply = (
-            f"🥗 **Nutritional & Hydration Protocol:**\n\n"
-            f"• **Daily Hydration**: Aim for **2.5 to 3.0 Liters** of pure water daily.\n"
-            f"• **Balanced Meals**: Fill 50% of your plate with complex vegetables, 25% lean protein, and 25% complex carbs.\n"
-            f"• **Energy Crash Prevention**: Replace sugary afternoon snacks with almonds, Greek yogurt, or fresh fruit."
-        )
-        return "nutrition_advice", reply, {}
 
-    # Try Google Gemini API query for open-ended queries
-    gemini_reply = query_gemini_api(prompt, emp_name, health_score, sleep_hrs, stress_lvl)
-    if gemini_reply:
-        return "gemini_llm_query", gemini_reply, {}
+def output_formatter_node(state):
+    """NODE 5: Output Formatter Node
+    Synthesizes and packages the final formatted conversational payload."""
+    if "?" not in state["reply"]:
+        state["reply"] += "\n\n💬 *What do you think is the best next step for you to try?*"
+    return state
 
-    # Default Fallback: Wellness-only scope enforcement
-    off_topic_reply = (
-        f"🚫 Sorry {emp_name}, I'm your dedicated **AI Wellness & Health Assistant** and I can only help with health and wellness-related topics.\n\n"
-        f"Here's what I **can** help you with:\n"
-        f"• 📅 **Schedule Health Checkups** — _\"schedule a checkup\"_\n"
-        f"• ⏰ **Set Wellness Reminders** — _\"remind me to drink water\"_\n"
-        f"• 🎯 **Track Health Goals** — _\"set a fitness goal\"_\n"
-        f"• 💡 **Sleep, Stress & Nutrition Tips** — _\"how to improve my sleep?\"_\n"
-        f"• 🧠 **Mental Health Support** — _\"I feel stressed\"_\n"
-        f"• 🔥 **Daily Motivation** — _\"motivate me\"_\n\n"
-        f"Try asking me one of these! 😊"
-    )
-    return "off_topic", off_topic_reply, {}
+
+def process_nlp_intent(user_id, prompt):
+    """Context-aware Smart NLP Chatbot Engine for Employee Wellness (State Graph Workflow)."""
+    # Initialize State Graph Context
+    state = {
+        "user_id": user_id,
+        "message": prompt,
+        "history": [],
+        "intent": "GENERAL_CONVERSATION",
+        "current_topic": "General Well-being",
+        "context_summary": "",
+        "action": None,
+        "action_data": {},
+        "reply": "",
+        "vitals": {
+            "emp_name": "Employee",
+            "health_score": 85,
+            "sleep_hrs": 7.5,
+            "stress_lvl": "Low"
+        }
+    }
+
+    # Pipeline Executions
+    state = memory_node(state)
+    state = router_node(state)
+    state = action_tool_node(state)
+    state = specialist_node(state)
+    state = output_formatter_node(state)
+
+    return state["intent"], state["reply"], state["action_data"]
 
 
 @chatbot_bp.route("/message", methods=["POST"])
