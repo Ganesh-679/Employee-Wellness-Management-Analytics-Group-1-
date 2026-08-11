@@ -128,15 +128,6 @@ def admin_dashboard():
             "avgBurnout": round(avg_burnout_val, 1) if avg_burnout_val is not None else 0.0
         })
 
-    # Fallback department stats for preview if database has no entries yet
-    if not department_sentiment_stats:
-        department_sentiment_stats = [
-            {"department": "Engineering", "avgSentiment": 0.45, "avgStress": 42.0, "avgBurnout": 35.0},
-            {"department": "Sales & Mktg", "avgSentiment": 0.28, "avgStress": 55.5, "avgBurnout": 48.0},
-            {"department": "Human Resources", "avgSentiment": 0.65, "avgStress": 25.0, "avgBurnout": 20.0},
-            {"department": "Operations", "avgSentiment": 0.38, "avgStress": 46.2, "avgBurnout": 38.0}
-        ]
-
     # Department aggregated risk stats
     dept_query = db.session.query(
         EmployeeProfile.department,
@@ -211,6 +202,7 @@ def admin_dashboard():
         "departmentStats": department_stats,
         "highRiskList": high_risk_list,
         "averageSentiment": round(avg_sentiment, 2) if avg_sentiment is not None else 0.0,
+        "totalSentimentLogs": total_sentiment_logs,
         "averageBurnout": round(avg_burnout, 1) if avg_burnout is not None else 0.0,
         "averageStress": round(avg_stress, 1) if avg_stress is not None else 0.0,
         "highBurnoutAlerts": high_burnout_alerts,

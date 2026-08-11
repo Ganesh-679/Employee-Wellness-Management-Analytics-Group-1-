@@ -1,67 +1,89 @@
-import math
 from datetime import datetime, timedelta
-from sqlalchemy import func
+from collections import defaultdict
 from extensions import db
 from models import User, HealthRecord, SentimentLog, EmployeeProfile
 
 
-def calculate_wellness_kpis():
-    """
-    Computes core HR Business Intelligence KPIs:
-    1. Participation Rate (%)
-    2. Absenteeism Rate (%)
-    3. Productivity Trend Index (%)
-    4. Program Effectiveness ROI (%)
-    5. Health Risk Matrix
-    """
-    total_users = User.query.count()
-    if total_users == 0:
-        total_users = 1  # Avoid division by zero
+def _linear_forecast(values, steps=3):
+    """Simple least-squares trend forecast without introducing a new dependency."""
+    if len(values) < 2:
+        return []
+    n = len(values)
+    x = list(range(n))
+    x_mean = sum(x) / n
+    y_mean = sum(values) / n
+    denom = sum((xi - x_mean) ** 2 for xi in x)
+    if denom == 0:
+        slope = 0.0
+    else:
+        slope = sum((xi - x_mean) * (yi - y_mean) for xi, yi in zip(x, values)) / denom
+    intercept = y_mean - slope * x_mean
+    return [intercept + slope * (n + i) for i in range(steps)]
 
+
+def _month_start(value):
+    return value.replace(day=1)
+
+
+def _add_months(value, count):
+    month = value.month - 1 + count
+    year = value.year + month // 12
+    month = month % 12 + 1
+    return value.replace(year=year, month=month, day=1)
+
+
+def _month_label(value, forecast=False):
+    suffix = " (fcst)" if forecast else ""
+    return value.strftime("%b %Y") + suffix
+
+
+def calculate_wellness_kpis():
+    """Calculate Module 5 KPIs strictly from the application's real records."""
+    total_users = User.query.count()
     thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
     now_dt = datetime.utcnow()
 
-    # 1. Participation Rate: % of registered users with health checks or journal logs in trailing 30 days
     active_user_ids = set()
-    for row in db.session.query(HealthRecord.user_id).filter(HealthRecord.record_date >= thirty_days_ago).all():
-        active_user_ids.add(row[0])
-    for row in db.session.query(SentimentLog.user_id).filter(SentimentLog.logged_at >= now_dt - timedelta(days=30)).all():
-        active_user_ids.add(row[0])
+    active_user_ids.update(
+        row[0] for row in db.session.query(HealthRecord.user_id)
+        .filter(HealthRecord.record_date >= thirty_days_ago).all()
+    )
+    active_user_ids.update(
+        row[0] for row in db.session.query(SentimentLog.user_id)
+        .filter(SentimentLog.logged_at >= now_dt - timedelta(days=30)).all()
+    )
+    participation_rate = round((len(active_user_ids) / total_users) * 100, 1) if total_users else 0.0
 
-    participation_rate = round((len(active_user_ids) / total_users) * 100, 1)
-
-    # 2. Absenteeism Rate: % of health records where attendance_status is 'Absent' or 'Leave'
     total_records = HealthRecord.query.count()
-    if total_records > 0:
-        absent_records = HealthRecord.query.filter(HealthRecord.attendance_status.in_(["Absent", "Leave"])).count()
-        absenteeism_rate = round((absent_records / total_records) * 100, 1)
+    absent_records = HealthRecord.query.filter(
+        HealthRecord.attendance_status.in_(["Absent", "Leave"])
+    ).count() if total_records else 0
+    absenteeism_rate = round((absent_records / total_records) * 100, 1) if total_records else 0.0
+
+    health_records = HealthRecord.query.all()
+    sentiment_records = SentimentLog.query.all()
+
+    if health_records:
+        avg_health_score = sum(r.health_score or 0 for r in health_records) / len(health_records)
+        avg_sleep = sum(r.sleep_hours or 0 for r in health_records) / len(health_records)
+        # Health score is already the application's normalized wellness score;
+        # attendance is applied as a transparent productivity adjustment.
+        productivity_index = avg_health_score * (1.0 - absenteeism_rate / 100.0)
+        productivity_index = round(max(0.0, min(100.0, productivity_index)), 1)
     else:
-        absenteeism_rate = 3.8  # Benchmark fallback
+        avg_sleep = 0.0
+        productivity_index = 0.0
 
-    # 3. Productivity Index Trend (%): Composite metric based on sleep, stress, attendance, and sentiment
-    avg_sleep = db.session.query(func.avg(HealthRecord.sleep_hours)).scalar() or 7.5
-    avg_stress_prob = db.session.query(func.avg(SentimentLog.stress_probability)).scalar() or 32.0
-    avg_burnout_prob = db.session.query(func.avg(SentimentLog.burnout_probability)).scalar() or 28.0
-
-    # Productivity formula: Sleep factor (max 35) + Attendance factor (max 40) + Mental wellness factor (max 25)
-    sleep_factor = min(1.0, avg_sleep / 7.5) * 35.0
-    attendance_factor = (100.0 - absenteeism_rate) * 0.40
-    wellness_factor = max(0.0, (100.0 - (avg_stress_prob * 0.5 + avg_burnout_prob * 0.5))) * 0.25
-
-    productivity_index = round(sleep_factor + attendance_factor + wellness_factor, 1)
-    productivity_index = max(40.0, min(99.5, productivity_index))
-
-    # 4. Program Effectiveness (% Improvement / ROI): Month-over-month health score recovery trend
     sixty_days_ago = datetime.utcnow().date() - timedelta(days=60)
-    prev_month_records = HealthRecord.query.filter(HealthRecord.record_date >= sixty_days_ago, HealthRecord.record_date < thirty_days_ago).all()
-    curr_month_records = HealthRecord.query.filter(HealthRecord.record_date >= thirty_days_ago).all()
+    prev_month_records = [r for r in health_records if sixty_days_ago <= r.record_date < thirty_days_ago]
+    curr_month_records = [r for r in health_records if r.record_date >= thirty_days_ago]
 
-    prev_avg_score = (sum(r.health_score for r in prev_month_records) / len(prev_month_records)) if prev_month_records else 72.0
-    curr_avg_score = (sum(r.health_score for r in curr_month_records) / len(curr_month_records)) if curr_month_records else 81.5
-
-    program_effectiveness = round(((curr_avg_score - prev_avg_score) / prev_avg_score) * 100, 1)
-    if program_effectiveness == 0:
-        program_effectiveness = 12.4  # positive recovery default
+    if prev_month_records and curr_month_records:
+        prev_avg = sum(r.health_score or 0 for r in prev_month_records) / len(prev_month_records)
+        curr_avg = sum(r.health_score or 0 for r in curr_month_records) / len(curr_month_records)
+        program_effectiveness = round(((curr_avg - prev_avg) / prev_avg) * 100, 1) if prev_avg else 0.0
+    else:
+        program_effectiveness = 0.0
 
     return {
         "participationRate": participation_rate,
@@ -69,58 +91,136 @@ def calculate_wellness_kpis():
         "productivityIndex": productivity_index,
         "programEffectiveness": program_effectiveness,
         "activeUsers": len(active_user_ids),
-        "totalEmployees": total_users
+        "totalEmployees": total_users,
+        "dataAvailability": {
+            "healthRecords": len(health_records),
+            "sentimentRecords": len(sentiment_records),
+            "historicalComparisonAvailable": bool(prev_month_records and curr_month_records)
+        }
     }
 
 
 def generate_predictive_analytics():
-    """
-    Generates Predictive Analytics time-series forecasts:
-    1. Monthly Absenteeism vs Productivity Dual-Axis Historical + 3-Month Forecast.
-    2. Predictive Departmental Risk Heatmap & Forecast Scores.
-    """
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep (fcst)", "Oct (fcst)"]
+    """Generate Module 5 analytics from actual health/sentiment records only."""
+    health_records = HealthRecord.query.order_by(HealthRecord.record_date.asc()).all()
 
-    # Historical + Projected Absenteeism Trend (%)
-    absenteeism_trend = [5.2, 4.8, 4.5, 4.1, 3.9, 3.7, 3.5, 3.4, 3.2, 3.0]
-    
-    # Historical + Projected Productivity Index (%)
-    productivity_trend = [78.5, 80.2, 82.0, 84.1, 85.6, 86.8, 87.5, 88.2, 89.4, 91.0]
+    # ---- Organization monthly history ----
+    monthly = defaultdict(lambda: {"total": 0, "absent": 0, "health": []})
+    for record in health_records:
+        month = _month_start(record.record_date)
+        monthly[month]["total"] += 1
+        if (record.attendance_status or "").strip().lower() in {"absent", "leave"}:
+            monthly[month]["absent"] += 1
+        if record.health_score is not None:
+            monthly[month]["health"].append(float(record.health_score))
 
-    # Department Predictive Risk Matrix
-    departments = ["Engineering", "Sales & Mktg", "Human Resources", "Operations", "Product & Design"]
-    
+    actual_months = sorted(monthly.keys())[-12:]
+    months = [_month_label(m) for m in actual_months]
+    absenteeism_trend = []
+    productivity_trend = []
+    for month in actual_months:
+        item = monthly[month]
+        absenteeism_trend.append(round((item["absent"] / item["total"]) * 100, 1) if item["total"] else 0.0)
+        productivity_trend.append(round(sum(item["health"]) / len(item["health"]), 1) if item["health"] else 0.0)
+
+    forecast_available = len(actual_months) >= 2
+    if forecast_available:
+        abs_forecast = [max(0.0, min(100.0, round(v, 1))) for v in _linear_forecast(absenteeism_trend, 3)]
+        prod_forecast = [max(0.0, min(100.0, round(v, 1))) for v in _linear_forecast(productivity_trend, 3)]
+        last_month = actual_months[-1]
+        for offset, (abs_v, prod_v) in enumerate(zip(abs_forecast, prod_forecast), start=1):
+            months.append(_month_label(_add_months(last_month, offset), forecast=True))
+            absenteeism_trend.append(abs_v)
+            productivity_trend.append(prod_v)
+
+    # ---- Department risk forecasts ----
+    department_records = defaultdict(list)
+    for record in health_records:
+        profile = EmployeeProfile.query.filter_by(user_id=record.user_id).first()
+        department = (profile.department if profile and profile.department else "General").strip() or "General"
+        department_records[department].append(record)
+
+    sentiment_by_user = defaultdict(list)
+    for log in SentimentLog.query.all():
+        sentiment_by_user[log.user_id].append(log)
+
     dept_forecasts = []
-    for dept in departments:
-        records = db.session.query(HealthRecord.health_score, SentimentLog.burnout_probability)\
-            .select_from(HealthRecord)\
-            .join(User, HealthRecord.user_id == User.id)\
-            .outerjoin(EmployeeProfile, User.id == EmployeeProfile.user_id)\
-            .outerjoin(SentimentLog, User.id == SentimentLog.user_id)\
-            .filter(func.coalesce(EmployeeProfile.department, 'General') == dept).all()
+    for department in sorted(department_records):
+        records = department_records[department]
+        avg_health = sum(r.health_score or 0 for r in records) / len(records)
+        current_risk = round(max(0.0, min(100.0, 100.0 - avg_health)), 1)
 
-        if records and len(records) > 0:
-            avg_score = sum(r[0] for r in records if r[0] is not None) / len(records)
-            avg_burnout = sum(r[1] for r in records if r[1] is not None) / len(records)
+        # Project the department risk only when at least two monthly observations exist.
+        dept_monthly = defaultdict(list)
+        for record in records:
+            dept_monthly[_month_start(record.record_date)].append(100.0 - (record.health_score or 0))
+        dept_months = sorted(dept_monthly)
+        dept_month_values = [sum(dept_monthly[m]) / len(dept_monthly[m]) for m in dept_months]
+        if len(dept_month_values) >= 2:
+            predicted_risk = round(max(0.0, min(100.0, _linear_forecast(dept_month_values, 1)[0])), 1)
+            confidence = "Trend-based"
         else:
-            avg_score = 75.0
-            avg_burnout = 32.0
+            predicted_risk = current_risk
+            confidence = "Low data"
 
-        current_risk_score = round(100.0 - avg_score, 1)
-        predicted_risk_next_month = round(max(5.0, current_risk_score - 3.5), 1)
-        predicted_burnout_alert_level = "Low" if avg_burnout < 30 else ("Medium" if avg_burnout < 50 else "High")
+        dept_user_ids = {r.user_id for r in records}
+        all_dept_users = EmployeeProfile.query.filter(
+            EmployeeProfile.department == department
+        ).all()
+        total_dept_users = len(all_dept_users)
+        active_cutoff = datetime.utcnow().date() - timedelta(days=30)
+        active_dept_users = {
+            r.user_id for r in records if r.record_date >= active_cutoff
+        }
+        active_dept_users.update(
+            log.user_id for uid in dept_user_ids
+            for log in sentiment_by_user.get(uid, [])
+            if log.logged_at and log.logged_at >= datetime.utcnow() - timedelta(days=30)
+        )
+        participation = round((len(active_dept_users) / total_dept_users) * 100, 1) if total_dept_users else 0.0
+
+        dept_sentiments = [log for uid in dept_user_ids for log in sentiment_by_user.get(uid, [])]
+        if dept_sentiments:
+            avg_burnout = sum(log.burnout_probability or 0 for log in dept_sentiments) / len(dept_sentiments)
+            if avg_burnout >= 50:
+                alert_level = "High"
+            elif avg_burnout >= 30:
+                alert_level = "Medium"
+            else:
+                alert_level = "Low"
+            action = (
+                "Urgent: Review workload and arrange a wellness check-in" if alert_level == "High"
+                else "Advisory: Encourage wellness participation and review workload" if alert_level == "Medium"
+                else "Stable: Continue wellness participation"
+            )
+        else:
+            avg_burnout = None
+            alert_level = "No Data"
+            action = "No sentiment check-ins yet; collect mental-health data before assessing burnout."
+
+        if confidence == "Low data":
+            action = "Limited history: collect data across another month before relying on the risk forecast." if alert_level == "No Data" else action + " (forecast confidence: low)"
 
         dept_forecasts.append({
-            "department": dept,
-            "currentRiskScore": current_risk_score,
-            "predictedRiskScore": predicted_risk_next_month,
-            "burnoutAlertLevel": predicted_burnout_alert_level,
-            "participationRate": 84.0 if dept == "Engineering" else (76.0 if dept == "Sales & Mktg" else 90.0)
+            "department": department,
+            "currentRiskScore": current_risk,
+            "predictedRiskScore": predicted_risk,
+            "burnoutAlertLevel": alert_level,
+            "participationRate": participation,
+            "predictionConfidence": confidence,
+            "averageBurnout": round(avg_burnout, 1) if avg_burnout is not None else None,
+            "records": len(records)
         })
 
     return {
         "months": months,
         "absenteeismTrend": absenteeism_trend,
         "productivityTrend": productivity_trend,
-        "departmentForecasts": dept_forecasts
+        "departmentForecasts": dept_forecasts,
+        "forecastAvailable": forecast_available,
+        "forecastMessage": (
+            "Forecasts are trend-based because at least two months of historical health data are available."
+            if forecast_available else
+            "Forecast unavailable yet: add health records across at least two different months to calculate a reliable trend."
+        )
     }

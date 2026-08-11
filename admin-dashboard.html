@@ -532,7 +532,7 @@
       <div class="intervention-panel">
         <div class="intervention-header">
           <h3>🔮 Predictive Departmental Risk &amp; Burnout Matrix</h3>
-          <span style="font-size:12px; color:var(--ink-muted);">Machine learning projections for proactive HR management</span>
+          <span style="font-size:12px; color:var(--ink-muted);">Trend-based projections from available employee wellness data</span>
         </div>
         <div style="overflow-x: auto;">
           <table class="records-table">
@@ -738,18 +738,18 @@
           const stats = await getAdminDashboardStats(token);
           
           // Update KPIs with dynamic sentiment emojis
+          const hasSentimentData = Number(stats.totalSentimentLogs || 0) > 0;
           const scoreVal = stats.averageSentiment !== undefined && stats.averageSentiment !== null ? Number(stats.averageSentiment) : 0.0;
-          let moodText = "Neutral 😐";
-          let formattedScore = scoreVal.toFixed(2);
-          if (scoreVal >= 0.5) {
-            moodText = "Very Positive 😁 🌱";
+          let moodText = hasSentimentData ? "Neutral 😐" : "No Data 🧠";
+          let formattedScore = hasSentimentData ? scoreVal.toFixed(2) : "—";
+          if (hasSentimentData && scoreVal >= 0.5) {
             formattedScore = `+${formattedScore}`;
-          } else if (scoreVal >= 0.15) {
+          } else if (hasSentimentData && scoreVal >= 0.15) {
             moodText = "Positive 😊 🌱";
             formattedScore = `+${formattedScore}`;
-          } else if (scoreVal <= -0.5) {
+          } else if (hasSentimentData && scoreVal <= -0.5) {
             moodText = "Highly Distressed 😫 🚨";
-          } else if (scoreVal <= -0.15) {
+          } else if (hasSentimentData && scoreVal <= -0.15) {
             moodText = "Negative 😟 ⚠️";
           }
           document.getElementById("adminSentimentScore").textContent = `${moodText} (${formattedScore})`;
@@ -783,10 +783,10 @@
           adminSentimentDeptChart = new Chart(sentCtx, {
             type: "bar",
             data: {
-              labels: labels.length ? labels : ["Engineering", "Sales", "HR", "Operations"],
+              labels: labels,
               datasets: [{
                 label: "Sentiment Polarity (-1 to +1)",
-                data: sentimentScores.length ? sentimentScores : [0.45, 0.28, 0.65, 0.38],
+                 data: sentimentScores,
                 backgroundColor: "rgba(20, 184, 166, 0.8)", // Teal
                 borderRadius: 6
               }]
@@ -811,10 +811,10 @@
           adminBurnoutDeptChart = new Chart(burnCtx, {
             type: "bar",
             data: {
-              labels: labels.length ? labels : ["Engineering", "Sales", "HR", "Operations"],
+              labels: labels,
               datasets: [{
                 label: "Avg Burnout Probability (%)",
-                data: burnoutScores.length ? burnoutScores : [35.0, 48.0, 20.0, 38.0],
+                 data: burnoutScores,
                 backgroundColor: "rgba(239, 68, 68, 0.8)", // Coral Red
                 borderRadius: 6
               }]
@@ -840,10 +840,19 @@
         // Filter departments with high stress or burnout
         const highRiskDepts = (deptStats || []).filter(d => d.avgStress >= 50.0 || d.avgBurnout >= 45.0);
 
+        if (!deptStats || deptStats.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--ink-muted);">
+              🧠 No mental-health check-in data is available yet. Employees need to submit sentiment reflections before department stress and burnout insights can be calculated.
+            </div>
+          `;
+          return;
+        }
+
         if (highRiskDepts.length === 0) {
           container.innerHTML = `
             <div style="text-align: center; padding: 20px; color: var(--ink-muted);">
-              ✨ ✅ All departments are showing stable mental wellbeing indicators. No stress or burnout thresholds exceeded. 🌿
+              ✨ No stress or burnout thresholds are currently exceeded in the available sentiment data. 🌿
             </div>
           `;
           return;
@@ -886,12 +895,14 @@
           const kpis = stats.wellnessKPIs || {};
           const predictive = stats.predictiveAnalytics || {};
           predictiveAnalyticsData = { kpis, predictive };
+          const forecastNote = document.querySelector("#predictiveAnalyticsView .chart-panel p");
+          if (forecastNote) forecastNote.textContent = predictive.forecastMessage || "Current data and available trend history.";
 
           // 1. Update KPI Deck
           document.getElementById("kpiParticipation").textContent = (kpis.participationRate || 0) + "%";
           document.getElementById("kpiAbsenteeism").textContent = (kpis.absenteeismRate || 0) + "%";
           document.getElementById("kpiProductivity").textContent = (kpis.productivityIndex || 0) + "%";
-          document.getElementById("kpiProgramEffectiveness").textContent = "+" + (kpis.programEffectiveness || 0) + "%";
+          document.getElementById("kpiProgramEffectiveness").textContent = (kpis.programEffectiveness > 0 ? "+" : "") + (kpis.programEffectiveness ?? 0) + "%";
           document.getElementById("kpiActiveUsers").textContent = kpis.activeUsers || 0;
 
           // 2. Render Predictive Visual Charts & Table
@@ -906,133 +917,102 @@
         const isDark = document.body.classList.contains("dark-theme");
         const textColor = isDark ? "#94a3b8" : "#475569";
         const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
+        const months = predictive.months || [];
+        const absData = predictive.absenteeismTrend || [];
+        const prodData = predictive.productivityTrend || [];
 
-        const months = predictive.months || ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep (fcst)", "Oct (fcst)"];
-        const absData = predictive.absenteeismTrend || [5.2, 4.8, 4.5, 4.1, 3.9, 3.7, 3.5, 3.4, 3.2, 3.0];
-        const prodData = predictive.productivityTrend || [78.5, 80.2, 82.0, 84.1, 85.6, 86.8, 87.5, 88.2, 89.4, 91.0];
-
-        // 1. Dual Axis Absenteeism vs Productivity Chart
-        const dualCtx = document.getElementById("adminAbsenteeismProductivityChart")?.getContext("2d");
+        const dualCanvas = document.getElementById("adminAbsenteeismProductivityChart");
+        const dualCtx = dualCanvas?.getContext("2d");
+        const dualPanel = dualCanvas?.parentElement;
         if (dualCtx) {
           if (adminAbsenteeismProductivityChart) adminAbsenteeismProductivityChart.destroy();
-          adminAbsenteeismProductivityChart = new Chart(dualCtx, {
-            type: "line",
-            data: {
-              labels: months,
-              datasets: [
-                {
-                  label: "Productivity Index (%)",
-                  data: prodData,
-                  borderColor: "#10b981", // Emerald
-                  backgroundColor: "rgba(16, 185, 129, 0.1)",
-                  borderWidth: 3,
-                  fill: true,
-                  tension: 0.3,
-                  yAxisID: "yProductivity"
-                },
-                {
-                  label: "Absenteeism Rate (%)",
-                  data: absData,
-                  borderColor: "#ef4444", // Coral Red
-                  backgroundColor: "rgba(239, 68, 68, 0.2)",
-                  borderWidth: 2,
-                  borderDash: [4, 4],
-                  tension: 0.3,
-                  yAxisID: "yAbsenteeism"
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              scales: {
-                x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                yProductivity: {
-                  type: "linear", position: "left", min: 40, max: 100,
-                  ticks: { color: "#10b981" }, grid: { color: gridColor },
-                  title: { display: true, text: "Productivity Index (%)", color: "#10b981" }
-                },
-                yAbsenteeism: {
-                  type: "linear", position: "right", min: 0, max: 15,
-                  ticks: { color: "#ef4444" }, grid: { display: false },
-                  title: { display: true, text: "Absenteeism Rate (%)", color: "#ef4444" }
-                }
+          dualPanel?.querySelector(".predictive-empty-message")?.remove();
+          if (!months.length) {
+            dualCanvas.style.display = "none";
+            dualPanel?.insertAdjacentHTML("beforeend", '<div class="empty-state predictive-empty-message">No health-record history is available yet. Submit employee health records to build the absenteeism and productivity trend.</div>');
+          } else {
+            dualCanvas.style.display = "block";
+            adminAbsenteeismProductivityChart = new Chart(dualCtx, {
+              type: "line",
+              data: {
+                labels: months,
+                datasets: [
+                  { label: "Productivity Index (%)", data: prodData, borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.1)", borderWidth: 3, fill: true, tension: 0.3, yAxisID: "yProductivity" },
+                  { label: "Absenteeism Rate (%)", data: absData, borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.2)", borderWidth: 2, borderDash: [4, 4], tension: 0.3, yAxisID: "yAbsenteeism" }
+                ]
               },
-              plugins: {
-                legend: { labels: { color: textColor } }
+              options: {
+                responsive: true,
+                scales: {
+                  x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                  yProductivity: { type: "linear", position: "left", min: 0, max: 100, ticks: { color: "#10b981" }, grid: { color: gridColor }, title: { display: true, text: "Productivity Index (%)", color: "#10b981" } },
+                  yAbsenteeism: { type: "linear", position: "right", min: 0, max: 100, ticks: { color: "#ef4444" }, grid: { display: false }, title: { display: true, text: "Absenteeism Rate (%)", color: "#ef4444" } }
+                },
+                plugins: { legend: { labels: { color: textColor } } }
               }
-            }
-          });
+            });
+          }
         }
 
-        // 2. Department Risk Forecast Chart
         const forecasts = predictive.departmentForecasts || [];
         const deptLabels = forecasts.map(f => f.department);
         const currRisk = forecasts.map(f => f.currentRiskScore);
         const predRisk = forecasts.map(f => f.predictedRiskScore);
-
-        const forecastCtx = document.getElementById("adminDeptRiskForecastChart")?.getContext("2d");
+        const forecastCanvas = document.getElementById("adminDeptRiskForecastChart");
+        const forecastCtx = forecastCanvas?.getContext("2d");
+        const forecastPanel = forecastCanvas?.parentElement;
         if (forecastCtx) {
           if (adminDeptRiskForecastChart) adminDeptRiskForecastChart.destroy();
-          adminDeptRiskForecastChart = new Chart(forecastCtx, {
-            type: "bar",
-            data: {
-              labels: deptLabels.length ? deptLabels : ["Engineering", "Sales", "HR", "Operations"],
-              datasets: [
-                {
-                  label: "Current Risk Score",
-                  data: currRisk.length ? currRisk : [38.5, 52.0, 24.2, 44.8],
-                  backgroundColor: "rgba(245, 158, 11, 0.8)", // Amber
-                  borderRadius: 6
-                },
-                {
-                  label: "Predicted Next Month Risk",
-                  data: predRisk.length ? predRisk : [35.0, 48.5, 20.7, 41.2],
-                  backgroundColor: "rgba(20, 184, 166, 0.8)", // Teal
-                  borderRadius: 6
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              scales: {
-                x: { ticks: { color: textColor }, grid: { display: false } },
-                y: { min: 0, max: 100, ticks: { color: textColor }, grid: { color: gridColor } }
+          forecastPanel?.querySelector(".predictive-empty-message")?.remove();
+          if (!forecasts.length) {
+            forecastCanvas.style.display = "none";
+            forecastPanel?.insertAdjacentHTML("beforeend", '<div class="empty-state predictive-empty-message">No department risk metrics are available yet. Health records are required before a department forecast can be calculated.</div>');
+          } else {
+            forecastCanvas.style.display = "block";
+            adminDeptRiskForecastChart = new Chart(forecastCtx, {
+              type: "bar",
+              data: {
+                labels: deptLabels,
+                datasets: [
+                  { label: "Current Risk Score", data: currRisk, backgroundColor: "rgba(245, 158, 11, 0.8)", borderRadius: 6 },
+                  { label: "Predicted Next Month Risk", data: predRisk, backgroundColor: "rgba(20, 184, 166, 0.8)", borderRadius: 6 }
+                ]
               },
-              plugins: {
-                legend: { labels: { color: textColor } }
+              options: {
+                responsive: true,
+                scales: { x: { ticks: { color: textColor }, grid: { display: false } }, y: { min: 0, max: 100, ticks: { color: textColor }, grid: { color: gridColor } } },
+                plugins: { legend: { labels: { color: textColor } } }
               }
-            }
-          });
+            });
+          }
         }
       }
 
       function renderPredictiveDeptTable(forecasts) {
         const tbody = document.getElementById("predictiveDeptTableBody");
         if (!tbody) return;
-
         if (!forecasts || forecasts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No department predictive metrics available.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No department predictive metrics available. Add employee health records first.</td></tr>';
           return;
         }
-
         const rows = forecasts.map(f => {
-          const alertColor = f.burnoutAlertLevel === "High" ? "#ef4444" : (f.burnoutAlertLevel === "Medium" ? "#f59e0b" : "#10b981");
-          const actionText = f.burnoutAlertLevel === "High" 
-            ? "🚨 Urgent: Workload review & wellness check-in required" 
-            : (f.burnoutAlertLevel === "Medium" ? "⚠️ Advisory: Encourage team wellness session & flex hours" : "✅ Stable: Maintain current wellness participation");
-
+          const alertColor = f.burnoutAlertLevel === "High" ? "#ef4444" : (f.burnoutAlertLevel === "Medium" ? "#f59e0b" : (f.burnoutAlertLevel === "No Data" ? "#64748b" : "#10b981"));
+          let actionText;
+          if (f.burnoutAlertLevel === "No Data") actionText = "🧠 No sentiment check-ins yet; collect mental-health data before assessing burnout.";
+          else if (f.predictionConfidence === "Low data") actionText = "📊 Limited history: collect another month of data before relying on the forecast.";
+          else if (f.burnoutAlertLevel === "High") actionText = "🚨 Urgent: Workload review & wellness check-in required";
+          else if (f.burnoutAlertLevel === "Medium") actionText = "⚠️ Advisory: Encourage team wellness session & review workload";
+          else actionText = "✅ Stable: Continue wellness participation";
           return `
             <tr>
               <td><b>${f.department}</b></td>
-              <td>${f.participationRate || 80}%</td>
+              <td>${f.participationRate}%</td>
               <td><span class="stat-val" style="font-size:16px;">${f.currentRiskScore}</span></td>
               <td><b style="color: #10b981; font-size:15px;">${f.predictedRiskScore}</b></td>
               <td><span class="badge" style="background:${alertColor}22; color:${alertColor}; border:1px solid ${alertColor}66;">${f.burnoutAlertLevel} Tier</span></td>
               <td style="font-size:12px; color:var(--ink-muted);">${actionText}</td>
-            </tr>
-          `;
+            </tr>`;
         }).join("");
-
         tbody.innerHTML = rows;
       }
 

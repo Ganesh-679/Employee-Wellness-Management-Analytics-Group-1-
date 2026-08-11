@@ -2791,7 +2791,6 @@ body.dark-theme .sim-score-number {
 /* ==========================================================
    LEADERBOARD
 ========================================================== */
-
 .leaderboard-table-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -2816,6 +2815,7 @@ body.dark-theme .sim-score-number {
 .leaderboard-table td {
     padding: 18px;
     border-bottom: 1px solid #e5e7eb;
+    color: #123b35;
 }
 
 .leaderboard-table tbody tr:hover {
@@ -2825,6 +2825,7 @@ body.dark-theme .sim-score-number {
 .leaderboard-rank {
     font-weight: bold;
     font-size: 18px;
+    color: #123b35;
 }
 
 .current-user-row {
@@ -2871,4 +2872,223 @@ body.dark-theme .sim-score-number {
             0 0 0 10px rgba(16, 185, 129, 0.25),
             0 15px 40px rgba(16, 185, 129, 0.45);
     }
+}
+/* ============================================================
+   TODAY'S COMMITMENTS — REFINED LIGHT + DARK MODE
+   Scoped ONLY to the commitments/tracker section.
+   ============================================================ */
+
+/* ---------- BASE / LIGHT MODE ---------- */
+
+.commits-panel .tracker-metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs);
+    color: var(--ink-900);
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition);
+}
+
+.commits-panel .tracker-metric-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--teal-500);
+    box-shadow: var(--shadow-card);
+}
+
+.commits-panel .tracker-metric-card h3 {
+    color: var(--ink-500);
+}
+
+.commits-panel .tracker-metric-card h1 {
+    color: var(--teal-700);
+}
+
+.commits-panel .tracker-task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs);
+    color: var(--ink-900);
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
+}
+
+.commits-panel .tracker-task-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--teal-500);
+    box-shadow: var(--shadow-card);
+}
+
+.commits-panel .tracker-task-card h3 {
+    color: var(--teal-700);
+}
+
+.commits-panel .tracker-task-card p {
+    color: var(--ink-500);
+}
+
+.commits-panel .tracker-priority.high {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.commits-panel .tracker-priority.medium {
+    background: var(--amber-100);
+    color: var(--amber-600);
+}
+
+.commits-panel .tracker-priority.low {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+
+/* ---------- DARK MODE ---------- */
+
+body.dark-theme .commits-panel .tracker-metric-card {
+    background: #0f1d1a !important;
+    border: 1px solid #1c3530 !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28) !important;
+    color: #d5e4de;
+}
+
+body.dark-theme .commits-panel .tracker-metric-card:hover {
+    background: #12231f !important;
+    border-color: #28544b !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.36) !important;
+}
+
+body.dark-theme .commits-panel .tracker-metric-card h3 {
+    color: #9db7ad !important;
+}
+
+body.dark-theme .commits-panel .tracker-metric-card h1 {
+    color: #a9cbbd !important;
+}
+
+
+/* Task cards */
+
+body.dark-theme .commits-panel .tracker-task-card {
+    background: #0f1d1a !important;
+    border: 1px solid #1c3530 !important;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.28) !important;
+    color: #d5e4de;
+}
+
+body.dark-theme .commits-panel .tracker-task-card:hover {
+    background: #11221e !important;
+    border-color: #28544b !important;
+    box-shadow: 0 7px 20px rgba(0, 0, 0, 0.38) !important;
+}
+
+body.dark-theme .commits-panel .tracker-task-card h3 {
+    color: #a9cbbd !important;
+}
+
+body.dark-theme .commits-panel .tracker-task-card p {
+    color: #91aaa1 !important;
+}
+
+
+/* Category badges — muted instead of glowing */
+
+body.dark-theme .commits-panel .tracker-priority.high {
+    background: rgba(194, 72, 60, 0.10) !important;
+    color: #e39a92 !important;
+    border: 1px solid rgba(194, 72, 60, 0.16);
+}
+
+body.dark-theme .commits-panel .tracker-priority.medium {
+    background: rgba(217, 164, 65, 0.09) !important;
+    color: #d8bd7c !important;
+    border: 1px solid rgba(217, 164, 65, 0.14);
+}
+
+body.dark-theme .commits-panel .tracker-priority.low {
+    background: rgba(47, 125, 93, 0.10) !important;
+    color: #9bc7ae !important;
+    border: 1px solid rgba(47, 125, 93, 0.15);
+}
+
+
+/* Buttons only inside Today's Commitments */
+
+body.dark-theme .commits-panel .integrated-tracker-complete-btn {
+    background: linear-gradient(
+        180deg,
+        #24796d,
+        #1d6259
+    ) !important;
+
+    border: 1px solid #2b8376 !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.dark-theme .commits-panel .integrated-tracker-complete-btn:hover {
+    background: linear-gradient(
+        180deg,
+        #2b877a,
+        #247066
+    ) !important;
+
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.dark-theme .commits-panel .integrated-tracker-view-btn {
+    background: #0a1614 !important;
+    color: #a9cbbd !important;
+    border: 1px solid #23413b !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme .commits-panel .integrated-tracker-view-btn:hover {
+    background: #12231f !important;
+    color: #c5ddd4 !important;
+    border-color: #2d5b51 !important;
+}
+
+
+/* Progress box */
+
+body.dark-theme .commits-panel .commits-progress-box {
+    background: #0a1715 !important;
+    border: 1px dashed #23413b !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme .commits-panel .progress-bar-container {
+    background: #19332e !important;
+}
+
+body.dark-theme .commits-panel .progress-bar-fill {
+    background: linear-gradient(
+        90deg,
+        #24796d,
+        #2b9384
+    ) !important;
+}
+
+body.dark-theme .commits-panel .progress-text-row {
+    color: #91aaa1 !important;
+}
+
+body.dark-theme .commits-panel .progress-percentage {
+    color: #6fae9e !important;
+}
+
+
+/* Dark mode task spacing / cleaner visual hierarchy */
+
+body.dark-theme .commits-panel .tracker-task-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+    padding-bottom: 10px;
+}
+
+body.dark-theme .commits-panel .tracker-task-footer {
+    margin-top: 16px;
 }

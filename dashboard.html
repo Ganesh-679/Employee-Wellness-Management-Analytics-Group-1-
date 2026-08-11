@@ -1154,10 +1154,6 @@
       <button class="nav-item" data-view="sentimentView" type="button">Mental Health &amp; Sentiment</button>
       <button class="nav-item" data-view="employeeAnalyticsView" type="button">📊 Wellness Analytics &amp; Performance</button>
       <button class="nav-item" data-view="chatbotView" type="button">🤖 AI Wellness Chatbot</button>
-      <button class="nav-item" data-view="trackerView" type="button">
-    🎯 Daily Tracker
-</button>
-
 <button class="nav-item" data-view="leaderboardView" type="button">
     🏆 Leaderboard
 </button>
@@ -1815,8 +1811,14 @@
           <div class="panel commits-panel" id="commitsPanel">
             <h2>Today's Commitments</h2>
             <p class="subtitle">Track and complete your personal wellness actions for today.</p>
+
+            <!-- Daily Wellness Tracker integrated into Today's Commitments.
+                 Completion uses the existing tracker API, so points/streaks
+                 continue to feed the leaderboard exactly as before. -->
+            <div id="commitTrackerSummary" class="tracker-metric-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px;"></div>
+
             <div class="commits-list" id="commitsList"></div>
-            
+
             <div class="commits-progress-box">
               <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="commitsProgressBar" style="width: 0%;"></div>
@@ -2236,43 +2238,7 @@
       <span style="width: 10px; height: 10px; background-color: #22c55e; border: 2px solid #ffffff; border-radius: 50%; position: absolute; top: 10px; left: 28px; box-shadow: 0 0 8px #22c55e;"></span>
       <span>AI Assistant</span>
     </button>
-    <section class="view" id="trackerView">
-
-    <div class="view-header">
-        <h1>🎯 Daily Wellness Tracker</h1>
-        <p>Complete today's wellness activities and earn rewards.</p>
-    </div>
-
-    <div class="panel">
-
-        <div id="trackerSummaryCards">
-
-        </div>
-
-    </div>
-
-    <div class="panel">
-
-        <h2>Today's AI Wellness Plan</h2>
-
-        <div id="todayTaskContainer">
-
-        </div>
-
-    </div>
-
-    <div class="panel">
-
-        <h2>Today's Progress</h2>
-
-        <div id="todayProgressContainer">
-
-        </div>
-
-    </div>
-
-</section>
-<!-- =====================================================
+    <!-- =====================================================
      LEADERBOARD VIEW
 ===================================================== -->
 
@@ -5297,50 +5263,180 @@ updateWellnessScore();
           `).join("");
 
 
-          const checklistKey = `wellness_commits_${data.record_date}`;
-          const savedStates = JSON.parse(localStorage.getItem(checklistKey) || "{}");
+          /*
+           * Daily Wellness Tracker is integrated into "Today's Commitments".
+           * The existing tracker API remains the single source of truth for
+           * completed tasks, points and streaks.
+           */
+          const commitTrackerSummary = document.getElementById("commitTrackerSummary");
 
-          const checklistItems = Object.entries(data.recommendations).map(([key, rec]) => {
-            const cat = categories[key] || { label: key };
-            return {
-              key: key,
-              label: `${cat.label}: ${rec.title}`
-            };
-          });
+          async function loadCommitTrackerSummary() {
+            try {
+              const summaryResponse = await fetch(`${API_BASE_URL}/tracker/summary`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                cache: "no-store"
+              });
 
-          function updateProgress() {
-            const checkboxes = commitsList.querySelectorAll(".commit-checkbox");
-            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-            const total = checkboxes.length;
-            const percent = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
-            
-            document.getElementById("commitsProgressBar").style.width = `${percent}%`;
-            document.getElementById("commitsProgressText").textContent = `${checkedCount}/${total} Completed`;
-            document.getElementById("commitsProgressPercentage").textContent = `${percent}%`;
+              const summaryData = await summaryResponse.json();
 
-            const states = {};
-            checkboxes.forEach(cb => {
-              states[cb.dataset.key] = cb.checked;
-            });
-            localStorage.setItem(checklistKey, JSON.stringify(states));
+              if (!summaryResponse.ok) {
+                throw new Error(summaryData.message || "Unable to load tracker summary.");
+              }
+
+              const totalTasks = Object.keys(data.recommendations).length;
+              const completed = summaryData.completed_tasks || 0;
+              const percent = totalTasks > 0
+                ? Math.round((completed / totalTasks) * 100)
+                : 0;
+
+              if (commitTrackerSummary) {
+                commitTrackerSummary.innerHTML = `
+                  <div class="tracker-metric-card" style="padding: 12px;">
+                    <h3>⭐ Points</h3>
+                    <h1 style="font-size: 26px;">${summaryData.points}</h1>
+                  </div>
+                  <div class="tracker-metric-card" style="padding: 12px;">
+                    <h3>🔥 Streak</h3>
+                    <h1 style="font-size: 26px;">${summaryData.streak}</h1>
+                  </div>
+                  <div class="tracker-metric-card" style="padding: 12px;">
+                    <h3>🏆 Rank</h3>
+                    <h1 style="font-size: 26px;">#${summaryData.rank}</h1>
+                  </div>
+                  <div class="tracker-metric-card" style="padding: 12px;">
+                    <h3>✅ Tasks</h3>
+                    <h1 style="font-size: 26px;">${completed}/${totalTasks}</h1>
+                  </div>
+                `;
+              }
+
+              document.getElementById("commitsProgressBar").style.width = `${percent}%`;
+              document.getElementById("commitsProgressText").textContent = `${completed}/${totalTasks} Completed`;
+              document.getElementById("commitsProgressPercentage").textContent = `${percent}%`;
+
+              return summaryData.completed_task_names || [];
+            } catch (summaryError) {
+              console.error("Tracker summary error:", summaryError);
+              return [];
+            }
           }
 
-          commitsList.innerHTML = checklistItems.map((item) => {
-            const isChecked = savedStates[item.key] ? "checked" : "";
+          const completedTaskNames = await loadCommitTrackerSummary();
+
+          commitsList.innerHTML = Object.entries(data.recommendations).map(([key, rec]) => {
+            const cat = categories[key] || { label: key };
+            const isCompleted = completedTaskNames.includes(rec.title);
+
             return `
-              <label class="commit-item">
-                <input type="checkbox" class="commit-checkbox" data-key="${item.key}" ${isChecked} />
-                <span class="commit-checkmark"></span>
-                <span class="commit-text">${item.label}</span>
-              </label>
+              <div class="tracker-task-card" style="padding: 14px; margin-bottom: 12px;">
+                <div class="tracker-task-header">
+                  <h3 style="font-size: 15px; margin: 0;">${rec.title}</h3>
+                  <span class="tracker-priority ${rec.needs_improvement ? "high" : "low"}">
+                    ${cat.label}
+                  </span>
+                </div>
+
+                <p style="font-size: 13px; line-height: 1.45; margin: 0;">
+                  ${rec.description}
+                </p>
+
+                <div class="tracker-task-footer" style="margin-top: 12px;">
+                  <button
+                    type="button"
+                    class="btn-primary integrated-tracker-complete-btn"
+                    data-task-name="${rec.title}"
+                    data-category="${cat.label}"
+                    ${isCompleted ? "disabled" : ""}
+                  >
+                    ${isCompleted ? "✅ Completed" : "✅ Complete"}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-secondary integrated-tracker-view-btn"
+                    data-task-name="${rec.title}"
+                  >
+                    📖 View Recommendation
+                  </button>
+                </div>
+              </div>
             `;
           }).join("");
 
-          commitsList.querySelectorAll(".commit-checkbox").forEach(cb => {
-            cb.addEventListener("change", updateProgress);
+          commitsList.querySelectorAll(".integrated-tracker-complete-btn").forEach(button => {
+            button.addEventListener("click", async () => {
+              const taskName = button.dataset.taskName;
+              const category = button.dataset.category;
+
+              try {
+                button.disabled = true;
+                button.textContent = "⏳ Completing...";
+
+                const completeResponse = await fetch(`${API_BASE_URL}/tracker/complete`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    task_name: taskName,
+                    category: category
+                  })
+                });
+
+                const completeData = await completeResponse.json();
+
+                if (!completeResponse.ok) {
+                  throw new Error(completeData.message || "Unable to complete task.");
+                }
+
+                button.textContent = "✅ Completed";
+
+                if (completeData.points_earned > 0) {
+                  alert(`Task completed! +${completeData.points_earned} points`);
+                }
+
+                // Refresh the integrated tracker summary from the server.
+                await loadCommitTrackerSummary();
+              } catch (completeError) {
+                console.error("Tracker completion error:", completeError);
+                button.disabled = false;
+                button.textContent = "✅ Complete";
+                alert(completeError.message || "Unable to complete task.");
+              }
+            });
           });
 
-          updateProgress();
+          commitsList.querySelectorAll(".integrated-tracker-view-btn").forEach(button => {
+            button.addEventListener("click", () => {
+              const taskName = button.dataset.taskName;
+
+              const recommendationsGrid = document.getElementById("recommendationsGrid");
+              if (recommendationsGrid) {
+                const cards = recommendationsGrid.querySelectorAll(".rec-card");
+                cards.forEach(card => {
+                  const cardText = card.textContent.trim().toLowerCase();
+
+                  if (cardText.includes(taskName.trim().toLowerCase())) {
+                    card.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center"
+                    });
+
+                    card.classList.add("tracker-recommendation-highlight");
+
+                    setTimeout(() => {
+                      card.classList.remove("tracker-recommendation-highlight");
+                    }, 4000);
+                  }
+                });
+              }
+            });
+          });
 
           // Initialize AI Voice Assistant for Module 3
           initAiVoiceEngine(data);
