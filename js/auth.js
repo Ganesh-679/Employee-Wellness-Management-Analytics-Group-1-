@@ -9,8 +9,9 @@
    backend's real address.
    ========================================================================= */
 
-// 👉 Change this one line once your backend is running.
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+  ? (window.location.port === '5000' ? '/api' : 'http://127.0.0.1:5000/api') 
+  : (window.location.origin + '/api');
 
 /* ---------- Toast notifications -----------------------------------------
    A "toast" is the small pop-up message in the corner of the screen (e.g.
@@ -117,12 +118,28 @@ function resetPassword({ identifier, role, otp, newPassword }) {
 
 /**
  * Small helper used on login pages: after a successful login, the backend
- * is expected to return a token. We stash it in-memory + sessionStorage so
- * later pages/modules of the project (e.g. the analytics dashboard) can
- * read it. sessionStorage clears when the tab closes — swap for
- * localStorage later if you want "stay logged in across browser restarts".
+ * is expected to return a token. When "Remember me" is checked we stash it
+ * in localStorage so it survives closing the browser/tab; otherwise we use
+ * sessionStorage, which clears as soon as the tab closes.
  */
-function persistSession(token, role) {
+function persistSession(token, role, rememberMe = true) {
+  localStorage.setItem("wellness_token", token);
+  localStorage.setItem("wellness_role", role);
   sessionStorage.setItem("wellness_token", token);
   sessionStorage.setItem("wellness_role", role);
+}
+
+/** Reads the session from whichever storage holds it (localStorage takes
+ * priority since that's the "remembered" one). */
+function getSession() {
+  const token = localStorage.getItem("wellness_token") || sessionStorage.getItem("wellness_token");
+  const role = localStorage.getItem("wellness_role") || sessionStorage.getItem("wellness_role");
+  return { token, role };
+}
+
+function clearSession() {
+  sessionStorage.removeItem("wellness_token");
+  sessionStorage.removeItem("wellness_role");
+  localStorage.removeItem("wellness_token");
+  localStorage.removeItem("wellness_role");
 }

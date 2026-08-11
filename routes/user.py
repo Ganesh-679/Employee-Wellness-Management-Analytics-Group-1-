@@ -2,8 +2,13 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 from extensions import db, bcrypt, limiter
 from models import User
-from utils import is_valid_email, is_password_valid, failed_password_rules
+from utils import (
+    is_valid_email,
+    is_password_valid,
+    failed_password_rules,
+)
 from config import Config
+
 
 user_bp = Blueprint("user", __name__, url_prefix="/api/user")
 
@@ -28,15 +33,17 @@ def register_user():
 
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "An account with this email already exists"}), 409
-
+    
     password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    new_user = User(email=email, password_hash=password_hash)
+    new_user = User(
+        email=email,
+        password_hash=password_hash,
+        )
     db.session.add(new_user)
     db.session.commit()
-
-    return jsonify({"message": "Account created successfully"}), 201
-
-
+    return jsonify({
+        "message": "Account created successfully",
+        }), 201
 @user_bp.route("/login", methods=["POST"])
 @limiter.limit("10 per minute")
 def login_user():
@@ -55,11 +62,17 @@ def login_user():
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"message": "Invalid email or password"}), 401
 
-    expires_delta = Config.JWT_REMEMBER_ME_EXPIRES if remember_me else Config.JWT_ACCESS_TOKEN_EXPIRES
     token = create_access_token(
         identity=str(user.id),
-        additional_claims={"role": "user", "email": user.email},
-        expires_delta=expires_delta,
+        additional_claims={
+            "role": "user",
+            "email": user.email
+        }
     )
 
-    return jsonify({"message": "Login successful", "token": token, "role": "user"}), 200
+    return jsonify(
+        {
+            "token": token,
+            "role": "user"
+        }
+    ), 200
