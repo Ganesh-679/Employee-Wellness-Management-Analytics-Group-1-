@@ -1,4 +1,7 @@
 import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 from flask import Flask, jsonify, send_from_directory
 from config import Config
 from extensions import db, bcrypt, jwt, cors, limiter
@@ -117,9 +120,16 @@ with app.app_context():
         try:
             connection.executescript(tracker_schema)
             connection.commit()
-            print("Daily Tracker database tables initialized successfully!")
         finally:
             connection.close()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        print("\n=======================================================")
+        print("  * EMPLOYEE WELLNESS MANAGEMENT ANALYTICS SERVER")
+        print("=======================================================")
+        print("  * Open in Browser : http://localhost:5000")
+        print("  * Direct Local IP : http://127.0.0.1:5000")
+        print("  * Status          : Server Ready & Listening")
+        print("=======================================================")
+    app.run(debug=True, host="127.0.0.1", port=5000)
