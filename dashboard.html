@@ -1153,7 +1153,7 @@
 <button class="nav-item" data-view="recommendationsView" type="button">Wellness Recommendations</button>
       <button class="nav-item" data-view="sentimentView" type="button">Mental Health &amp; Sentiment</button>
       <button class="nav-item" data-view="employeeAnalyticsView" type="button">📊 Wellness Analytics &amp; Performance</button>
-      <button class="nav-item" data-view="chatbotView" type="button">🤖 AI Wellness Chatbot</button>
+      <button class="nav-item" data-view="chatbotView" type="button" style="display: none !important;">🤖 AI Wellness Chatbot</button>
 <button class="nav-item" data-view="leaderboardView" type="button">
     🏆 Leaderboard
 </button>
@@ -2158,86 +2158,2979 @@
         </div>
       </div>
     </section>
-    <!-- Module 6: AI Wellness Chatbot & Engagement View -->
-    <section class="view" id="chatbotView">
-      <div class="view-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-        <div>
-          <h1>🤖 AI Wellness Chatbot &amp; Voice Assistant</h1>
-          <p>24/7 assistance for health checkup scheduling, automated reminders, goal tracking, and voice interaction.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button type="button" class="btn btn-secondary btn-sm" id="btnToggleVoiceOutput">🔊 Voice Speech: ON</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnClearChatHistory">🗑️ Clear Chat</button>
-        </div>
+    <!-- Lottie Player Custom Element for Premium Robot Chatbot -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <div id="floatingChatbotContainer" style="position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none;">
+      <!-- Speech bubble hover invitation -->
+      <div id="floatingSpeechBubble" style="opacity: 0; transform: translateY(8px) scale(0.9); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: var(--surface); border: 1px solid var(--teal-400); border-radius: 12px; padding: 8px 14px; margin-bottom: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; cursor: pointer; pointer-events: auto;">
+        <span style="position: relative; display: flex; width: 8px; height: 8px;">
+          <span class="animate-ping" style="position: absolute; inline-size: 100%; block-size: 100%; border-radius: 50%; background: #10b981; opacity: 0.75;"></span>
+          <span style="position: relative; inline-size: 8px; block-size: 8px; border-radius: 50%; background: #10b981;"></span>
+        </span>
+        <span style="font-size: 11px; font-weight: 700; color: var(--teal-700);">Ask AI Wellness Coach 🎙️</span>
       </div>
 
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-        <!-- Left Column: Main Interactive Chat Panel -->
-        <div class="panel" style="margin: 0; display: flex; flex-direction: column; height: 600px; padding: 20px;">
-          <!-- Quick Action Suggestion Chips -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border);" id="chatActionChips">
-            <button type="button" class="yt-filter-btn chat-chip" data-prompt="Schedule my preventive health checkup">📅 Schedule Checkup</button>
-            <button type="button" class="yt-filter-btn chat-chip" data-prompt="Set a daily water reminder">⏰ Set Water Reminder</button>
-            <button type="button" class="yt-filter-btn chat-chip" data-prompt="How am I doing on my health goals?">🎯 Track Goals</button>
-            <button type="button" class="yt-filter-btn chat-chip" data-prompt="Give me advice to improve my sleep quality">💡 Sleep Advice</button>
-            <button type="button" class="yt-filter-btn chat-chip" data-prompt="Give me wellness motivation">🔥 Motivation</button>
-          </div>
-
-          <!-- Chat Scroll Messages Area -->
-          <div id="chatMessagesContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 8px; margin-bottom: 14px;">
-            <!-- Messages rendered dynamically -->
-          </div>
-
-          <!-- Typing Indicator -->
-          <div id="chatTypingIndicator" style="display: none; font-size: 12px; color: var(--ink-muted); margin-bottom: 8px;">
-            🤖 AI Assistant is typing...
-          </div>
-
-          <!-- Message Input Bar -->
-          <form id="chatForm" style="display: flex; gap: 10px; align-items: center; width: 100%;">
-            <button type="button" class="btn btn-secondary" id="btnMicInput" title="Speak through microphone" style="width: 44px !important; min-width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-              🎙️
-            </button>
-            <input type="text" id="chatInputText" placeholder="Ask your wellness assistant or click the mic to speak..." style="flex: 1; width: 100%; height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0 14px; color: var(--ink-900); font-size: 14px;" autocomplete="off" />
-            <button type="submit" class="btn btn-primary" id="btnSendChat" style="width: 120px !important; min-width: 120px; height: 44px; padding: 0 20px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;">
-              Send
-            </button>
-          </form>
-        </div>
-
-        <!-- Right Column: Sidebar Widgets (Reminders & Scheduled Checkups) -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          <!-- Active Wellness Reminders Widget -->
-          <div class="panel" style="margin: 0;">
-            <h2 style="font-size: 16px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center;">
-              <span>⏰ Active Reminders</span>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;" id="activeRemindersCount">0</span>
-            </h2>
-            <div id="activeRemindersList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
-              <p class="empty-state" style="font-size: 12px;">No active reminders. Ask the chatbot to set one!</p>
+      <!-- Premium Floating Sliding Chatbot Drawer (Mentara Style) -->
+      <div id="floatingChatbotDrawer" style="opacity: 0; transform: translateY(30px) scale(0.95); pointer-events: none; transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1); width: 420px; height: 580px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-xl); display: flex; flex-direction: column; overflow: hidden; margin-bottom: 12px; max-width: calc(100vw - 48px);">
+        <!-- Drawer Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface-sunken); padding: 12px 16px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+              <lottie-player src="RobotSaludando.json" loop autoplay style="width: 28px; height: 28px;"></lottie-player>
+            </div>
+            <div>
+              <b style="font-size: 13px; color: var(--ink-900); display: block; line-height: 1.2;">AI Wellness Coach</b>
+              <span id="companionStatusText" style="font-size: 10px; color: #10b981; font-weight: 600;">Coach Idle</span>
             </div>
           </div>
-
-          <!-- Scheduled Checkups Widget -->
-          <div class="panel" style="margin: 0;">
-            <h2 style="font-size: 16px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center;">
-              <span>📅 Scheduled Checkups</span>
-              <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;" id="scheduledCheckupsCount">0</span>
-            </h2>
-            <div id="scheduledCheckupsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
-              <p class="empty-state" style="font-size: 12px;">No upcoming checkups scheduled.</p>
-            </div>
+          <div style="display: flex; align-items: center; gap: 8px; pointer-events: auto;">
+            <button type="button" id="btnToggleVoiceOutput" title="Toggle Voice Output" style="background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px;">🔊</button>
+            <button type="button" id="btnClearChatHistory" title="Clear Chat" style="background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px;">🗑️</button>
+            <button type="button" id="btnCloseChatbotDrawer" title="Close Drawer" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; color: var(--ink-muted); font-weight: 700;">✕</button>
           </div>
         </div>
+
+        <!-- Ambient Glow Indicator -->
+        <div id="companionGlow" style="height: 3px; background: #10b981; width: 100%; transition: all 0.3s;"></div>
+
+        <!-- Wellness Context Summary (Mini Banner) -->
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%); border-bottom: 1px solid var(--border); padding: 8px 12px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+          <div id="wellnessContextSummary" style="color: var(--ink-900); font-weight: 600; text-align: left;">Score: -- | Sleep: -- | Stress: --</div>
+          <div style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; pointer-events: auto;" class="no-scrollbar">
+            <button type="button" class="btn btn-secondary btn-sm chat-chip" data-prompt="Give me a personalized wellness diet plan" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">🥗 Diet</button>
+            <button type="button" class="btn btn-secondary btn-sm chat-chip" data-prompt="Suggest a restorative sleep routine" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">💤 Sleep</button>
+            <button type="button" class="btn btn-secondary btn-sm chat-chip" data-prompt="Recommend desk ergonomics and stretch exercises" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">🧘 Stretch</button>
+            <button type="button" class="btn btn-secondary btn-sm chat-chip" data-prompt="Schedule my preventive health checkup" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">📅 Checkup</button>
+          </div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div id="chatMessagesContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; pointer-events: auto; background: var(--surface);">
+          <!-- Dynamic chat bubbles -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="chatTypingIndicator" style="display: none; font-size: 11px; color: var(--ink-muted); padding: 8px 16px; align-items: center; gap: 6px; border-top: 1px solid var(--border); background: var(--surface-sunken);">
+          <span class="spinner-border spinner-border-sm text-success" role="status" style="width: 10px; height: 10px; border-width: 1.5px;"></span>
+          <span>AI Coach is compiling response...</span>
+        </div>
+
+        <!-- Message Input Form -->
+        <form id="chatForm" style="display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface-sunken); pointer-events: auto; margin: 0; width: 100%;">
+          <button type="button" id="btnMicInput" title="Speak through microphone" style="width: 36px; min-width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;">🎙️</button>
+          <input type="text" id="chatInputText" placeholder="Ask your wellness assistant..." style="flex: 1; height: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; color: var(--ink-900); font-size: 13px;" autocomplete="off" />
+          <button type="submit" class="btn btn-primary" id="btnSendChat" style="height: 36px; padding: 0 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; font-size: 13px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; width: auto !important; min-width: 0 !important;">Send</button>
+        </form>
       </div>
-    </section>
 
-    <!-- Floating AI Chatbot Assistant Widget (Bottom Right) -->
-    <button type="button" id="floatingChatbotBtn" title="24/7 AI Wellness Assistant" aria-label="Open AI Wellness Assistant" style="position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); color: #ffffff; border: none; border-radius: 50px; padding: 12px 20px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3); transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);">
-      <div style="font-size: 22px; line-height: 1; animation: botPulse 3s infinite ease-in-out;">🤖</div>
-      <span style="width: 10px; height: 10px; background-color: #22c55e; border: 2px solid #ffffff; border-radius: 50%; position: absolute; top: 10px; left: 28px; box-shadow: 0 0 8px #22c55e;"></span>
-      <span>AI Assistant</span>
-    </button>
+      <style>
+        #floatingChatbotBtn,
+        #floatingChatbotBtn:hover,
+        #floatingChatbotBtn:focus,
+        #floatingChatbotBtn:active {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+      </style>
+      <!-- Interactive Waving Lottie Trigger -->
+      <button type="button" id="floatingChatbotBtn" title="24/7 AI Wellness Assistant" aria-label="Open AI Wellness Assistant" style="background: transparent !important; border: none !important; border-radius: 50%; width: 150px; height: 150px; padding: 0; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: none !important; position: relative; overflow: visible; outline: none !important; transition: all 0.3s ease;">
+        <lottie-player src="RobotSaludando.json" background="transparent" speed="0.95" style="width: 135px; height: 135px; position: relative; z-index: 2;" loop autoplay></lottie-player>
+        <span style="width: 16px; height: 16px; background-color: #22c55e; border: 3px solid #ffffff; border-radius: 50%; position: absolute; top: 15px; right: 15px; box-shadow: 0 0 8px #22c55e; z-index: 3;"></span>
+      </button>
+    </div>
+    <section class="view" id="trackerView">
+
+    <div class="view-header">
+        <h1>🎯 Daily Wellness Tracker</h1>
+        <p>Complete today's wellness activities and earn rewards.</p>
+    </div>
+
+    <div class="panel">
+
+        <div id="trackerSummaryCards">
+
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Today's AI Wellness Plan</h2>
+
+        <div id="todayTaskContainer">
+
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Today's Progress</h2>
+
+        <div id="todayProgressContainer">
+
+        </div>
+
+    </div>
+
+</section>
+<!-- =====================================================
+     LEADERBOARD VIEW
+===================================================== -->
+
+<section class="view" id="leaderboardView">
+
+    <div class="view-header">
+        <h1>🏆 Wellness Leaderboard</h1>
+        <p>See employee rankings based on wellness activity and points.</p>
+    </div>
+
+    <div class="panel">
+
+        <div id="leaderboardContainer">
+            <p class="empty-state">Loading leaderboard...</p>
+        </div>
+
+    </div>
+
+</section>
+
+<section class="view" id="leaderboardView">
+
+    <div class="view-header">
+        <h1>🏆 Leaderboard</h1>
+        <p>Top wellness performers.</p>
+    </div>
+
+    <div class="panel">
+
+        <h2>Leaderboard</h2>
+
+        <p>Leaderboard module is under development.</p>
+
+    </div>
+
+</section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/auth.js?v=2"></script>
+  <script src="js/health.js?v=2"></script>
+  <script src="js/profile.js?v=2"></script>
+  <script src="js/chatbot.js?v=2"></script>
+  <script>
+    (function () {
+      const { token, role } = getSession();
+      if (!token) {
+        window.location.href = "login-user.html";
+        return;
+      }
+      if (role !== "user") {
+        clearSession();
+        window.location.href = "login-user.html";
+        return;
+      }
+
+      // Pre-fill health form date with today's date
+      const recordDateInput = document.getElementById("recordDate");
+      if (recordDateInput && !recordDateInput.value) {
+        recordDateInput.value = new Date().toISOString().split("T")[0];
+      }
+
+      // Theme Toggle Logic
+      const themeToggleBtn = document.getElementById("themeToggleBtn");
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark-theme");
+        themeToggleBtn.textContent = "☀️ Light Mode";
+      } else {
+        document.body.classList.remove("dark-theme");
+        themeToggleBtn.textContent = "🌙 Dark Mode";
+      }
+      themeToggleBtn.addEventListener("click", () => {
+        const isDark = document.body.classList.toggle("dark-theme");
+        if (isDark) {
+          localStorage.setItem("theme", "dark");
+          themeToggleBtn.textContent = "☀️ Light Mode";
+          showToast("Dark Mode Enabled", "success");
+        } else {
+          localStorage.setItem("theme", "light");
+          themeToggleBtn.textContent = "🌙 Dark Mode";
+          showToast("Light Mode Enabled", "success");
+        }
+
+        // Redraw prediction features chart if it exists to update grid/label colors
+        if (latestFeatures && document.getElementById("riskChartPanel").style.display === "block") {
+          if (riskFeaturesChart) {
+            riskFeaturesChart.destroy();
+            riskFeaturesChart = null;
+          }
+          renderFeatureChart(latestFeatures);
+        }
+      });
+      // AI Voice Assistant State Variables (Hoisted Globally)
+      var currentSpeechIndex = 0;
+      var aiSpeechQueue = [];
+      var isAiSpeaking = false;
+      var isAiPaused = false;
+      var aiVoiceUtterance = null;
+
+      // --- Module 5: Employee Personal Wellness Analytics ---
+      let empHealthTrendChart = null;
+      let empHabitRadarChart = null;
+      let cachedEmpRecords = [];
+      let currentEmpRange = "30";
+      let currentEmpMetric = "all";
+      let empWellnessPoints = 0;
+      let empStreak = 0;
+
+      async function loadEmployeeAnalytics() {
+        try {
+          const recordsRes = await listHealthRecords(token);
+          cachedEmpRecords = recordsRes.records || [];
+          updateWellnessScore();
+
+          // Fetch real user points and streak from backend tracker API
+          try {
+            const trackerRes = await fetch(`${API_BASE_URL}/tracker/summary`, {
+              headers: { "Authorization": `Bearer ${token}` }
+            });
+            const trackerData = await trackerRes.json();
+            if (trackerRes.ok && trackerData.points !== undefined) {
+              empWellnessPoints = trackerData.points;
+              empStreak = trackerData.streak || 0;
+            }
+          } catch (e) {
+            console.error("Error fetching tracker points:", e);
+          }
+
+          const ptsEl = document.getElementById("empWellnessPointsVal");
+          if (ptsEl) ptsEl.textContent = `🏆 ${empWellnessPoints} Points`;
+
+          renderEmployeeAnalyticsView();
+        } catch (err) {
+          console.error("Employee analytics load error:", err);
+        }
+      }
+function loadGreeting() {
+
+    const greeting = document.getElementById("greetingText");
+    const sub = document.getElementById("greetingSubText");
+    const date = document.getElementById("todayDate");
+
+    if (!greeting || !sub || !date) return;
+
+    const now = new Date();
+    const hour = now.getHours();
+
+    if (hour < 12) {
+        greeting.innerHTML = "Good Morning 👋";
+        sub.innerHTML = "Start your day with positive energy.";
+    } else if (hour < 17) {
+        greeting.innerHTML = "Good Afternoon ☀️";
+        sub.innerHTML = "Hope your work is going great.";
+    } else {
+        greeting.innerHTML = "Good Evening 🌙";
+        sub.innerHTML = "Take care of your wellness before ending the day.";
+    }
+
+    date.innerHTML = now.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    });
+}
+function updateWellnessScore() {
+
+    const scoreElement = document.getElementById("wellnessScore");
+    const statusElement = document.getElementById("wellnessStatus");
+
+    // No health records yet
+    if (!cachedEmpRecords || cachedEmpRecords.length === 0) {
+
+        scoreElement.textContent = "--";
+        statusElement.textContent = "No Health Data";
+        statusElement.style.color = "#6b7280";
+
+        return;
+    }
+
+    // Latest health record
+    const latest = cachedEmpRecords[0];
+
+    const score = latest.healthScore || latest.health_score || 0;
+
+    scoreElement.textContent = score;
+
+    if (score >= 90) {
+        statusElement.textContent = "Excellent";
+        statusElement.style.color = "green";
+    }
+    else if (score >= 75) {
+        statusElement.textContent = "Good";
+        statusElement.style.color = "#16a34a";
+    }
+    else if (score >= 50) {
+        statusElement.textContent = "Average";
+        statusElement.style.color = "#f59e0b";
+    }
+    else {
+        statusElement.textContent = "Needs Attention";
+        statusElement.style.color = "red";
+    }
+}
+function updateProfileCompletion() {
+
+    const fields = [
+        "fullName",
+        "employeeCode",
+        "designation",
+        "department",
+        "dateOfJoining",
+        "phone",
+        "workLocation"
+    ];
+
+    let completed = 0;
+
+    fields.forEach(id => {
+
+        const field = document.getElementById(id);
+
+        if (field && field.value.trim() !== "") {
+            completed++;
+        }
+
+    });
+
+    const percentage = Math.round((completed / fields.length) * 100);
+
+    document.getElementById("profileCompletionText").textContent = percentage + "%";
+
+    document.getElementById("profileCompletionBar").style.width = percentage + "%";
+
+}
+      function renderEmployeeAnalyticsView() {
+        let records = cachedEmpRecords.slice();
+        if (currentEmpRange === "7") {
+          records = records.slice(0, 7);
+        } else if (currentEmpRange === "30") {
+          records = records.slice(0, 30);
+        }
+
+        if (!records.length) {
+          document.getElementById("empHealthScoreCard").textContent = "85 / 100";
+          document.getElementById("empProductivityCard").textContent = "84.2%";
+          document.getElementById("empSleepCard").textContent = "7.5 hrs";
+          document.getElementById("empStressCard").textContent = "Low";
+          document.getElementById("empStreakCard").textContent = "🔥 0 Days";
+          renderEmployeeAnalyticsCharts([]);
+          return;
+        }
+
+        // Compute period-average health metrics across selected records
+        const totalScore = records.reduce((sum, r) => sum + (r.healthScore || 85), 0);
+        const avgScore = Math.round(totalScore / records.length);
+
+        const totalSleep = records.reduce((sum, r) => sum + (r.sleepHours || 7.5), 0);
+        const avgSleep = (totalSleep / records.length).toFixed(1);
+
+        // Count stress levels across selected period
+        const stressCounts = { Low: 0, Medium: 0, High: 0 };
+        records.forEach(r => {
+          const st = r.stressLevel || "Low";
+          if (stressCounts[st] !== undefined) stressCounts[st]++;
+          else stressCounts.Low++;
+        });
+
+        // Determine dominant stress level for period
+        let dominantStress = "Low";
+        if (stressCounts.High >= stressCounts.Medium && stressCounts.High >= stressCounts.Low && stressCounts.High > 0) {
+          dominantStress = "High";
+        } else if (stressCounts.Medium >= stressCounts.Low && stressCounts.Medium > 0) {
+          dominantStress = "Medium";
+        }
+
+        // Period Productivity Index formula based on period averages
+        const sleepFactor = Math.min(1.0, parseFloat(avgSleep) / 7.5) * 40;
+        const stressFactor = dominantStress === "Low" ? 40 : (dominantStress === "Medium" ? 25 : 10);
+        const prodIndex = (sleepFactor + stressFactor + 18.5).toFixed(1);
+
+        // Compute real consecutive daily streak
+        const healthRecordStreak = calculateConsecutiveStreak(cachedEmpRecords);
+        const activeStreak = Math.max(healthRecordStreak, empStreak);
+        const streakText = activeStreak === 0 ? "0 Days" : `🔥 ${activeStreak} Day${activeStreak > 1 ? 's' : ''}`;
+
+        document.getElementById("empHealthScoreCard").textContent = `${avgScore} / 100`;
+        document.getElementById("empHealthCategoryLabel").textContent = avgScore >= 80 ? "Optimal Health (Avg)" : (avgScore >= 60 ? "Moderate Health (Avg)" : "Needs Attention");
+        document.getElementById("empProductivityCard").textContent = `${prodIndex}%`;
+        document.getElementById("empSleepCard").textContent = `${avgSleep} hrs`;
+        document.getElementById("empStressCard").textContent = dominantStress;
+        document.getElementById("empStreakCard").textContent = streakText;
+
+        renderEmployeeAnalyticsCharts(records);
+      }
+
+      function calculateConsecutiveStreak(records) {
+        if (!records || !records.length) return 0;
+        const uniqueDates = Array.from(new Set(records.map(r => r.recordDate))).sort().reverse();
+        
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayStr = today.toISOString().slice(0, 10);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+        if (!uniqueDates.includes(todayStr) && !uniqueDates.includes(yesterdayStr)) {
+          return 0;
+        }
+
+        let checkDate = uniqueDates.includes(todayStr) ? today : yesterday;
+        let streak = 0;
+
+        while (true) {
+          const dateStr = checkDate.toISOString().slice(0, 10);
+          if (uniqueDates.includes(dateStr)) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+        return streak;
+      }
+
+      function renderEmployeeAnalyticsCharts(records) {
+        if (typeof Chart === "undefined") {
+          console.warn("Chart.js CDN library is not available.");
+          return;
+        }
+        const isDark = document.body.classList.contains("dark-theme");
+        const textColor = isDark ? "#94a3b8" : "#475569";
+        const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
+
+        // 1. Line Chart: Health & Energy Trend
+        const trendCtx = document.getElementById("empHealthTrendChart")?.getContext("2d");
+        if (trendCtx) {
+          if (empHealthTrendChart) empHealthTrendChart.destroy();
+
+          const labels = records.length ? records.slice().reverse().map(r => r.recordDate) : ["Week 1", "Week 2", "Week 3", "Week 4"];
+          const scores = records.length ? records.slice().reverse().map(r => r.healthScore || 80) : [78, 82, 85, 88];
+          const energies = scores.map(s => Math.min(98, Math.round(s * 1.05)));
+
+          const datasets = [];
+          if (currentEmpMetric === "all" || currentEmpMetric === "score") {
+            datasets.push({
+              label: "Health Score",
+              data: scores,
+              borderColor: "#10b981", // Emerald
+              backgroundColor: "rgba(16, 185, 129, 0.15)",
+              fill: true,
+              tension: 0.35,
+              borderWidth: 3
+            });
+          }
+          if (currentEmpMetric === "all" || currentEmpMetric === "energy") {
+            datasets.push({
+              label: "Energy Level Index (%)",
+              data: energies,
+              borderColor: "#3b82f6", // Blue
+              backgroundColor: "rgba(59, 130, 246, 0.05)",
+              fill: false,
+              tension: 0.35,
+              borderWidth: 2,
+              borderDash: [4, 4]
+            });
+          }
+
+          empHealthTrendChart = new Chart(trendCtx, {
+            type: "line",
+            data: { labels, datasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { min: 40, max: 100, ticks: { color: textColor }, grid: { color: gridColor } }
+              },
+              plugins: {
+                legend: { labels: { color: textColor } }
+              }
+            }
+          });
+        }
+
+        // 2. Radar Chart: Habit Balance vs Simulated Targets
+        const radarCtx = document.getElementById("empHabitRadarChart")?.getContext("2d");
+        if (radarCtx) {
+          if (empHabitRadarChart) empHabitRadarChart.destroy();
+          const latest = records.length ? records[0] : {};
+          
+          const targetSleep = parseFloat(document.getElementById("simTargetSleepRange")?.value || 7.5);
+          const targetEx = parseFloat(document.getElementById("simTargetExRange")?.value || 150);
+          const targetWater = parseFloat(document.getElementById("simTargetWaterRange")?.value || 2.5);
+
+          const sleepVal = Math.min(100, Math.round(((latest.sleepHours || 7.5) / targetSleep) * 100));
+          const waterVal = Math.min(100, Math.round(((latest.waterIntakeLiters || 2.5) / targetWater) * 100));
+          const exVal = Math.min(100, Math.round(((latest.exerciseMinutesPerWeek || 150) / targetEx) * 100));
+          const stressVal = latest.stressLevel === "Low" ? 90 : (latest.stressLevel === "Medium" ? 65 : 40);
+
+          empHabitRadarChart = new Chart(radarCtx, {
+            type: "radar",
+            data: {
+              labels: ["Sleep", "Hydration", "Exercise", "Stress Control", "Check-in Habits"],
+              datasets: [
+                {
+                  label: "My Actual Habit Score",
+                  data: [sleepVal, waterVal, exVal, stressVal, 95],
+                  backgroundColor: "rgba(16, 185, 129, 0.25)",
+                  borderColor: "#10b981",
+                  pointBackgroundColor: "#10b981"
+                },
+                {
+                  label: "Simulated Target Goal",
+                  data: [100, 100, 100, 100, 100],
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  borderColor: "rgba(255, 255, 255, 0.3)",
+                  borderDash: [3, 3],
+                  pointBackgroundColor: "transparent"
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                r: {
+                  min: 0, max: 100,
+                  ticks: { display: false },
+                  grid: { color: gridColor },
+                  angleLines: { color: gridColor },
+                  pointLabels: { color: textColor, font: { size: 11, weight: "bold" } }
+                }
+              },
+              plugins: {
+                legend: { labels: { color: textColor } }
+              }
+            }
+          });
+        }
+      }
+
+      // Wire Time Range Filter Pills
+      document.querySelectorAll(".emp-range-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".emp-range-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentEmpRange = btn.dataset.range;
+          renderEmployeeAnalyticsView();
+        });
+      });
+
+      // Wire Metric Filter Buttons
+      document.querySelectorAll(".emp-metric-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".emp-metric-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentEmpMetric = btn.dataset.metric;
+          renderEmployeeAnalyticsCharts(cachedEmpRecords);
+        });
+      });
+
+      // Wire Interactive Habit Goal Simulator Sliders
+      const simSleepRange = document.getElementById("simTargetSleepRange");
+      const simExRange = document.getElementById("simTargetExRange");
+      const simWaterRange = document.getElementById("simTargetWaterRange");
+
+      simSleepRange?.addEventListener("input", () => {
+        document.getElementById("simTargetSleepVal").textContent = simSleepRange.value + " h";
+        renderEmployeeAnalyticsCharts(cachedEmpRecords);
+      });
+      simExRange?.addEventListener("input", () => {
+        document.getElementById("simTargetExVal").textContent = simExRange.value + " min";
+        renderEmployeeAnalyticsCharts(cachedEmpRecords);
+      });
+      simWaterRange?.addEventListener("input", () => {
+        document.getElementById("simTargetWaterVal").textContent = simWaterRange.value + " L";
+        renderEmployeeAnalyticsCharts(cachedEmpRecords);
+      });
+
+      // Wire Goal Reset Button
+      document.getElementById("btnResetEmpGoals")?.addEventListener("click", () => {
+        if (simSleepRange) simSleepRange.value = 7.5;
+        if (simExRange) simExRange.value = 150;
+        if (simWaterRange) simWaterRange.value = 2.5;
+
+        document.getElementById("simTargetSleepVal").textContent = "7.5 h";
+        document.getElementById("simTargetExVal").textContent = "150 min";
+        document.getElementById("simTargetWaterVal").textContent = "2.5 L";
+
+        renderEmployeeAnalyticsCharts(cachedEmpRecords);
+        showToast("Goal targets reset to default benchmarks", "success");
+      });
+
+      // Wire Milestone Claim Points Buttons with backend database persistence
+      document.querySelectorAll(".claim-points-btn").forEach(btn => {
+        const milestoneKey = btn.dataset.milestone || btn.dataset.points;
+        const claimedKey = `claimed_milestone_${milestoneKey}`;
+
+        // Restore claimed button state from localStorage
+        if (localStorage.getItem(claimedKey)) {
+          btn.disabled = true;
+          btn.textContent = "Claimed ✅";
+          btn.style.opacity = "0.6";
+          btn.style.cursor = "not-allowed";
+        }
+
+        btn.addEventListener("click", async () => {
+          const pts = parseInt(btn.dataset.points || "50", 10);
+          btn.disabled = true;
+          btn.textContent = "⏳ Claiming...";
+
+          try {
+            const res = await fetch(`${API_BASE_URL}/tracker/claim-bonus`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ points: pts, milestone_key: milestoneKey })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to claim points");
+
+            empWellnessPoints = data.total_points;
+            document.getElementById("empWellnessPointsVal").textContent = `🏆 ${empWellnessPoints} Points`;
+
+            localStorage.setItem(claimedKey, "true");
+            btn.textContent = "Claimed ✅";
+            btn.style.opacity = "0.6";
+            btn.style.cursor = "not-allowed";
+            showToast(`🎉 Earned +${pts} Wellness Points! Total: ${empWellnessPoints}`, "success");
+          } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.textContent = `✨ Claim ${pts} Points`;
+          }
+        });
+      });
+
+      // Wire PDF Export Button for Employee Analytics
+      document.getElementById("btnEmpExportPdf")?.addEventListener("click", () => {
+        const empName = document.getElementById("sidebarProfileName")?.textContent || "Employee";
+        const empRole = document.getElementById("sidebarProfileRole")?.textContent || "N/A";
+        const score = document.getElementById("empHealthScoreCard")?.textContent || "--";
+        const prod = document.getElementById("empProductivityCard")?.textContent || "--";
+        const streak = document.getElementById("empStreakCard")?.textContent || "--";
+        const sleep = document.getElementById("empSleepCard")?.textContent || "--";
+        const stress = document.getElementById("empStressCard")?.textContent || "--";
+
+        const printHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>My Wellness Performance & Analytics - ${empName}</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+              .header { border-bottom: 3px solid #10b981; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+              .header h1 { color: #0f172a; font-size: 24px; margin: 0; }
+              .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+              .card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; }
+              .card b { font-size: 22px; color: #10b981; display: block; margin-top: 4px; }
+              @media print { body { padding: 0; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div>
+                <h1>⚡ My Personal Wellness Performance Report</h1>
+                <p>Personalized Employee Health Score & Performance Trajectory</p>
+              </div>
+              <div style="font-size: 12px; color: #64748b;">${new Date().toLocaleString()}</div>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px;">
+              <div><b>Employee:</b> ${empName} | <b>Role:</b> ${empRole}</div>
+              <div><b>Total Wellness Reward Points:</b> ${empWellnessPoints} Points</div>
+            </div>
+
+            <div class="grid">
+              <div class="card">Overall Health Score<b>${score}</b></div>
+              <div class="card">Productivity Index<b>${prod}</b></div>
+              <div class="card">Consistency Streak<b>${streak}</b></div>
+              <div class="card">Sleep Quality<b>${sleep}</b></div>
+            </div>
+
+            <div class="card" style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981;">
+              <b>💡 Personal Wellness Summary:</b>
+              Your personal productivity index is current at ${prod} with a stress status of ${stress}. Keep maintaining your active daily check-ins!
+            </div>
+          </body>
+          
+          </html>
+        `;
+
+        const printWindow = window.open("", "_blank", "width=850,height=900");
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 300);
+        showToast("PDF report preview & Save as PDF window opened!", "success");
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        clearSession();
+        window.location.href = "login.html";
+      });
+      loadGreeting();
+      loadProfile();
+[
+    "fullName",
+    "employeeCode",
+    "designation",
+    "department",
+    "dateOfJoining",
+    "phone",
+    "workLocation"
+].forEach(id => {
+
+    const el = document.getElementById(id);
+
+    if (!el) return;
+
+    el.addEventListener("input", () => {
+        updateWellnessScore();
+        updateProfileCompletion();
+    });
+
+    el.addEventListener("change", () => {
+        updateWellnessScore();
+        updateProfileCompletion();
+    });
+
+});
+
+      document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.classList.contains("disabled")) return;
+          document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
+          document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+          btn.classList.add("active");
+          const viewId = btn.dataset.view;
+          document.getElementById(viewId).classList.add("active");
+
+          // Stop AI Voice Briefing if speaking when switching tabs
+          if (typeof stopAiSpeech === "function") {
+            stopAiSpeech();
+          }
+
+          // Lazy load data based on the active view
+          if (viewId === "personalInfoView") {
+            loadProfile();
+          } else if (viewId === "healthDataView") {
+            loadRecords();
+          } else if (viewId === "reportsView") {
+            loadReports();
+          } else if (viewId === "recommendationsView") {
+            loadRecommendations();
+          } else if (viewId === "riskView") {
+            loadRiskPrediction();
+          } else if (viewId === "sentimentView") {
+            loadSentimentData();
+          } else if (viewId === "employeeAnalyticsView") {
+            loadEmployeeAnalytics();
+          } else if (viewId === "chatbotView") {
+            loadChatbotView();
+          }
+        });
+      });
+
+      // --- Module 6: AI Wellness Chatbot & Voice Assistant Logic ---
+      const chatMessagesContainer = document.getElementById("chatMessagesContainer");
+      const chatInputText = document.getElementById("chatInputText");
+      const chatForm = document.getElementById("chatForm");
+      const chatTypingIndicator = document.getElementById("chatTypingIndicator");
+      const btnMicInput = document.getElementById("btnMicInput");
+      const btnToggleVoiceOutput = document.getElementById("btnToggleVoiceOutput");
+      const btnClearChatHistory = document.getElementById("btnClearChatHistory");
+      const floatingChatbotBtn = document.getElementById("floatingChatbotBtn");
+      const floatingSpeechBubble = document.getElementById("floatingSpeechBubble");
+
+      // Hover invitation trigger for floating widget
+      floatingChatbotBtn?.addEventListener("mouseenter", () => {
+        if (floatingSpeechBubble) {
+          floatingSpeechBubble.style.opacity = "1";
+          floatingSpeechBubble.style.transform = "translateY(0) scale(1)";
+        }
+      });
+      floatingChatbotBtn?.addEventListener("mouseleave", () => {
+        if (floatingSpeechBubble) {
+          floatingSpeechBubble.style.opacity = "0";
+          floatingSpeechBubble.style.transform = "translateY(8px) scale(0.9)";
+        }
+      });
+
+      floatingChatbotBtn?.addEventListener("click", () => {
+        const drawer = document.getElementById("floatingChatbotDrawer");
+        if (!drawer) return;
+        const isOpen = drawer.style.opacity === "1";
+        if (isOpen) {
+          drawer.style.opacity = "0";
+          drawer.style.transform = "translateY(30px) scale(0.95)";
+          drawer.style.pointerEvents = "none";
+          if (typeof stopAiSpeech === "function") {
+            stopAiSpeech();
+          }
+        } else {
+          drawer.style.opacity = "1";
+          drawer.style.transform = "translateY(0) scale(1)";
+          drawer.style.pointerEvents = "auto";
+          loadChatbotView();
+          setTimeout(() => {
+            chatInputText?.focus();
+          }, 150);
+        }
+      });
+
+      document.getElementById("btnCloseChatbotDrawer")?.addEventListener("click", () => {
+        const drawer = document.getElementById("floatingChatbotDrawer");
+        if (drawer) {
+          drawer.style.opacity = "0";
+          drawer.style.transform = "translateY(30px) scale(0.95)";
+          drawer.style.pointerEvents = "none";
+        }
+        if (typeof stopAiSpeech === "function") {
+          stopAiSpeech();
+        }
+      });
+
+      // Lottie Companion Status Controller
+      function setCompanionStatus(status) {
+        const glow = document.getElementById("companionGlow");
+        const dot = document.getElementById("companionStatusDot");
+        const text = document.getElementById("companionStatusText");
+        const player = document.getElementById("lottieCompanion");
+        
+        if (!glow || !dot || !text || !player) return;
+        
+        if (status === "listening") {
+          glow.style.background = "radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#ef4444";
+          text.textContent = "Recording... Speak now";
+          text.style.color = "#ef4444";
+          player.setAttribute("speed", "1.25");
+        } else if (status === "thinking") {
+          glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#f59e0b";
+          text.textContent = "Coach is thinking...";
+          text.style.color = "#f59e0b";
+          player.setAttribute("speed", "1.5");
+        } else if (status === "speaking") {
+          glow.style.background = "radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#10b981";
+          text.textContent = "Coach is speaking...";
+          text.style.color = "#10b981";
+          player.setAttribute("speed", "1.0");
+        } else {
+          glow.style.background = "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%)";
+          dot.style.background = "#10b981";
+          text.textContent = "Companion Idle";
+          text.style.color = "#10b981";
+          player.setAttribute("speed", "0.85");
+        }
+      }
+
+      window.addEventListener("companion-status-changed", (e) => {
+        setCompanionStatus(e.detail);
+      });
+
+      // Update wellness context banner based on cached health scores
+      function updateChatbotContextBanner() {
+        const summaryEl = document.getElementById("wellnessContextSummary");
+        const proTipEl = document.getElementById("companionProTip");
+        if (!summaryEl) return;
+
+        let scoreText = "--";
+        let sleepText = "--";
+        let stressText = "--";
+
+        if (cachedEmpRecords && cachedEmpRecords.length > 0) {
+          const latest = cachedEmpRecords[0];
+          scoreText = `${latest.healthScore || latest.health_score || 0}%`;
+          sleepText = `${latest.sleepHours || latest.sleep_hours || 0} hrs`;
+          stressText = latest.stressLevel || latest.stress_level || "Low";
+        }
+
+        summaryEl.innerHTML = `Score: <strong style="color: #10b981;">${scoreText}</strong> | Sleep: <strong style="color: #3b82f6;">${sleepText}</strong> | Stress: <strong style="color: #f59e0b;">${stressText}</strong>`;
+
+        if (proTipEl) {
+          const tips = [
+            `Your average sleep is ${sleepText}. Try to keep screens away 45 minutes before sleeping for restorative rest.`,
+            `Your stress balance is ${stressText}. Try scheduling a quick 5-min stretch break to stay refreshed!`,
+            `Health Score is ${scoreText}. Tap 'Diet Plan' above to customize your nutritional macro ratios.`,
+            "Consistency is key! Log your daily water and activity metrics to claim more bonus points."
+          ];
+          proTipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
+        }
+      }
+
+      async function loadChatbotView() {
+        try {
+          requestNotificationPermission();
+          startReminderScheduler(token);
+          updateChatbotContextBanner();
+          setCompanionStatus("idle");
+          await Promise.all([
+            fetchAndRenderChatHistory(),
+            fetchAndRenderReminders(),
+            fetchAndRenderCheckups()
+          ]);
+        } catch (err) {
+          console.error("Error initializing chatbot view:", err);
+        }
+      }
+
+      async function fetchAndRenderChatHistory() {
+        try {
+          const res = await getChatHistory(token);
+          const messages = res.messages || [];
+          chatMessagesContainer.innerHTML = "";
+
+          if (!messages.length) {
+            // Render welcome message if history is empty
+            appendChatMessage("bot", "Hello! 👋 I am your **24/7 AI Wellness Coach**. I am powered by Google Gemini and specialized in employee health, stress management, scheduling, and wellness reminders!\n\nAsk me any questions, or click the quick action chips above to start!");
+            return;
+          }
+
+          messages.forEach(msg => {
+            appendChatMessage(msg.sender, msg.text, false);
+          });
+          scrollChatToBottom();
+        } catch (err) {
+          console.error("Failed to load chat history:", err);
+        }
+      }
+
+      function appendChatMessage(sender, text, shouldSpeak = false) {
+        const isBot = sender === "bot";
+        const bubble = document.createElement("div");
+        bubble.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          align-self: ${isBot ? 'flex-start' : 'flex-end'};
+          max-width: 82%;
+          background: ${isBot ? 'var(--surface-sunken)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'};
+          color: ${isBot ? 'var(--ink-900)' : '#ffffff'};
+          border: ${isBot ? '1px solid var(--border)' : 'none'};
+          border-radius: 14px;
+          padding: 12px 16px;
+          font-size: 14px;
+          line-height: 1.5;
+          box-shadow: var(--shadow-xs);
+        `;
+
+        // Format basic markdown bold and bullet points
+        const formattedText = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/\n/g, '<br>');
+
+        bubble.innerHTML = `
+          <div style="font-size: 11px; font-weight: 700; opacity: 0.7; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            ${isBot ? '🤖 AI Wellness Coach' : '👤 You'}
+          </div>
+          <div>${formattedText}</div>
+        `;
+
+        chatMessagesContainer.appendChild(bubble);
+        scrollChatToBottom();
+
+        if (isBot && shouldSpeak) {
+          speakText(text);
+        }
+      }
+
+      function scrollChatToBottom() {
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+      }
+
+      // Handle Form Submit (Sending Messages)
+      chatForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const prompt = (chatInputText.value || "").trim();
+        if (!prompt) return;
+
+        appendChatMessage("user", prompt);
+        chatInputText.value = "";
+        chatTypingIndicator.style.display = "flex";
+        window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "thinking" }));
+
+        try {
+          const res = await sendChatMessage(prompt, token);
+          chatTypingIndicator.style.display = "none";
+          appendChatMessage("bot", res.reply, true);
+
+          // Refresh widgets if action created
+          if (res.actionData?.checkup) {
+            fetchAndRenderCheckups();
+            showToast(`📅 Checkup Scheduled for ${res.actionData.checkup.scheduledDate}`, "success");
+            sendDesktopNotification("📅 Health Checkup Scheduled", `Your appointment is set for ${res.actionData.checkup.scheduledDate}`);
+            playNotificationChime();
+          }
+          if (res.actionData?.reminder) {
+            fetchAndRenderReminders();
+            showToast(`⏰ Reminder Active: ${res.actionData.reminder.title}`, "success");
+            sendDesktopNotification("⏰ Reminder Set", `${res.actionData.reminder.title} (${res.actionData.reminder.timeStr})`);
+            playNotificationChime();
+          }
+          if (res.actionData?.navigate) {
+            const targetView = res.actionData.navigate;
+            const navBtn = document.querySelector(`.nav-item[data-view="${targetView}"]`);
+            if (navBtn) {
+              navBtn.click();
+              showToast(`Navigated to ${navBtn.textContent.trim()} Page`, "success");
+            }
+          }
+        } catch (err) {
+          chatTypingIndicator.style.display = "none";
+          appendChatMessage("bot", `⚠️ ${err.message}`);
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+        }
+      });
+
+      // Quick Action Suggestion Chips Handler
+      document.querySelectorAll(".chat-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          const prompt = chip.dataset.prompt;
+          if (prompt) {
+            chatInputText.value = prompt;
+            if (typeof chatForm.requestSubmit === "function") {
+              chatForm.requestSubmit();
+            } else {
+              chatForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+            }
+          }
+        });
+      });
+
+      // Microphone Speech Recognition Handler (Voice Input STT)
+      let isListening = false;
+      btnMicInput?.addEventListener("click", () => {
+        if (isListening) return;
+
+        try {
+          isListening = true;
+          btnMicInput.style.background = "#ef4444";
+          btnMicInput.style.color = "#fff";
+          btnMicInput.textContent = "🔴";
+          showToast("🎙️ Listening... Speak into your microphone now!", "info");
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "listening" }));
+
+          initSpeechRecognition(
+            (transcript) => {
+              chatInputText.value = transcript;
+              showToast(`Recognized: "${transcript}"`, "success");
+              window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+              if (typeof chatForm.requestSubmit === "function") {
+                chatForm.requestSubmit();
+              } else {
+                chatForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+              }
+            },
+            () => {
+              isListening = false;
+              btnMicInput.style.background = "";
+              btnMicInput.style.color = "";
+              btnMicInput.textContent = "🎙️";
+              window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+            }
+          );
+        } catch (err) {
+          isListening = false;
+          btnMicInput.style.background = "";
+          btnMicInput.style.color = "";
+          btnMicInput.textContent = "🎙️";
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+          showToast(err.message, "error");
+        }
+      });
+
+      // Voice Output Toggle Handler (TTS with Pause & Resume)
+      btnToggleVoiceOutput?.addEventListener("click", () => {
+        isVoiceOutputEnabled = !isVoiceOutputEnabled;
+        toggleVoiceSpeech(isVoiceOutputEnabled);
+        btnToggleVoiceOutput.textContent = isVoiceOutputEnabled ? "🔊 Voice Speech: ON" : "🔇 Voice Speech: OFF";
+        btnToggleVoiceOutput.style.background = isVoiceOutputEnabled ? "" : "rgba(239, 68, 68, 0.15)";
+        btnToggleVoiceOutput.style.color = isVoiceOutputEnabled ? "" : "#ef4444";
+        showToast(`Voice Speech Output ${isVoiceOutputEnabled ? 'Resumed / Enabled' : 'Paused / Muted'}`, "info");
+      });
+
+      // Clear Chat History Handler
+      btnClearChatHistory?.addEventListener("click", async () => {
+        try {
+          await clearChatHistory(token);
+          chatMessagesContainer.innerHTML = "";
+          appendChatMessage("bot", "Chat history cleared. How can I assist you now?");
+          showToast("Chat history cleared", "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+
+      // Render Active Reminders Sidebar Widget
+      async function fetchAndRenderReminders() {
+        try {
+          const res = await getWellnessReminders(token);
+          const reminders = res.reminders || [];
+          const container = document.getElementById("activeRemindersList");
+          document.getElementById("activeRemindersCount").textContent = reminders.length;
+
+          if (!reminders.length) {
+            container.innerHTML = '<p class="empty-state" style="font-size: 12px;">No active reminders. Ask the chatbot to set one!</p>';
+            return;
+          }
+
+          container.innerHTML = reminders.map(r => `
+            <div style="background: var(--surface-sunken); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <b style="font-size: 12px; color: var(--ink-900); display: block;">${r.title}</b>
+                <span style="font-size: 11px; color: var(--ink-muted);">${r.timeStr}</span>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm delete-reminder-btn" data-id="${r.id}" style="padding: 2px 8px; font-size: 11px; color: var(--danger);">✕</button>
+            </div>
+          `).join("");
+
+          container.querySelectorAll(".delete-reminder-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              try {
+                await deleteWellnessReminder(btn.dataset.id, token);
+                fetchAndRenderReminders();
+                showToast("Reminder deleted", "success");
+              } catch (err) {
+                showToast(err.message, "error");
+              }
+            });
+          });
+        } catch (err) {
+          console.error("Failed to load reminders:", err);
+        }
+      }
+
+      // Render Scheduled Health Checkups Sidebar Widget
+      async function fetchAndRenderCheckups() {
+        try {
+          const res = await getScheduledCheckups(token);
+          const checkups = res.checkups || [];
+          const container = document.getElementById("scheduledCheckupsList");
+          document.getElementById("scheduledCheckupsCount").textContent = checkups.length;
+
+          if (!checkups.length) {
+            container.innerHTML = '<p class="empty-state" style="font-size: 12px;">No upcoming checkups scheduled.</p>';
+            return;
+          }
+
+          container.innerHTML = checkups.map(c => `
+            <div style="background: var(--surface-sunken); border: 1px solid var(--border); border-left: 3px solid #3b82f6; padding: 10px 12px; border-radius: 8px; position: relative;">
+              <button onclick="handleDeleteCheckup(${c.id})" title="Remove checkup" style="position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--ink-muted); cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 4px; transition: all 0.15s;" onmouseover="this.style.color='#ef4444';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.color='var(--ink-muted)';this.style.background='none'">✕</button>
+              <b style="font-size: 12px; color: var(--ink-900); display: block; padding-right: 20px;">${c.checkupType}</b>
+              <span style="font-size: 11px; color: #3b82f6; font-weight: 600;">📅 Date: ${c.scheduledDate}</span>
+              <span style="font-size: 10px; color: var(--ink-muted); display: block; margin-top: 2px;">${c.notes || ''}</span>
+            </div>
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load checkups:", err);
+        }
+      }
+
+      async function handleDeleteCheckup(checkupId) {
+        try {
+          await deleteCheckup(checkupId, token);
+          showToast("Checkup removed successfully", "success");
+          fetchAndRenderCheckups();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+      window.handleDeleteCheckup = handleDeleteCheckup;
+
+      const profileForm = document.getElementById("profileForm");
+      const profileAlert = document.getElementById("profileAlert");
+      const profileSubmitBtn = document.getElementById("profileSubmitBtn");
+
+      async function loadProfile() {
+        try {
+          const data = await getProfile(token);
+          if (data.profile) {
+            document.getElementById("fullName").value = data.profile.fullName || "";
+            document.getElementById("employeeCode").value = data.profile.employeeCode || "";
+            document.getElementById("designation").value = data.profile.designation || "";
+            document.getElementById("department").value = data.profile.department || "";
+            document.getElementById("dateOfJoining").value = data.profile.dateOfJoining || "";
+            document.getElementById("phone").value = data.profile.phone || "";
+            document.getElementById("workLocation").value = data.profile.workLocation || "";
+            updateProfileCompletion();
+
+const recordsRes = await listHealthRecords(token);
+cachedEmpRecords = recordsRes.records || [];
+
+updateWellnessScore();
+
+            // Populate sidebar profile card
+            if (data.profile.fullName) {
+              document.getElementById("sidebarProfileName").textContent = data.profile.fullName;
+            }
+            if (data.profile.designation) {
+              document.getElementById("sidebarProfileRole").textContent = data.profile.designation;
+            } else if (data.profile.department) {
+              document.getElementById("sidebarProfileRole").textContent = data.profile.department;
+            }
+
+            // Load avatar if exists
+            if (data.profile.profilePicture) {
+              setAvatarImage(data.profile.profilePicture);
+            }
+          }
+        } catch (err) {
+          showAlertBanner(profileAlert, err.message, "error");
+        }
+      }
+
+      // --- Profile Picture & Preview Modal helpers ---
+      let currentPhotoUrl = null;
+
+      // Open the fullscreen preview modal
+      function openPhotoPreview() {
+        if (!currentPhotoUrl) return;
+        const modal = document.getElementById("photoPreviewModal");
+        const img   = document.getElementById("photoPreviewImg");
+        const name  = document.getElementById("photoPreviewName");
+        img.src = currentPhotoUrl;
+        name.textContent = document.getElementById("sidebarProfileName").textContent || "";
+        modal.classList.add("open");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePhotoPreview() {
+        const modal = document.getElementById("photoPreviewModal");
+        modal.classList.remove("open");
+        document.body.style.overflow = "";
+      }
+
+      // Wire preview close button and backdrop click
+      document.getElementById("photoPreviewClose").addEventListener("click", closePhotoPreview);
+      document.getElementById("photoPreviewBackdrop").addEventListener("click", closePhotoPreview);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePhotoPreview(); });
+
+      // Sidebar eye icon → open preview
+      document.getElementById("overlayEye").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openPhotoPreview();
+      });
+
+      // Large profile pic overlay → open preview
+      document.getElementById("picPreviewOverlay").addEventListener("click", openPhotoPreview);
+      document.getElementById("sidebarProfileCard").addEventListener("click", () => {
+    document.querySelector(
+        '.nav-item[data-view="personalInfoView"]'
+    ).click();
+});
+
+      function setAvatarImage(filename) {
+        currentPhotoUrl = `/api/profile/picture/${filename}`;
+
+        // Sidebar avatar
+        const sidebarImg = document.getElementById("avatarImage");
+        const sidebarPlaceholder = document.getElementById("avatarPlaceholder");
+        sidebarImg.src = currentPhotoUrl;
+        sidebarImg.style.display = "block";
+        sidebarImg.classList.add("uploaded");
+        sidebarPlaceholder.style.display = "none";
+        // Switch overlay to eye icon
+        document.getElementById("avatarContainer").classList.add("has-photo");
+        // Show preview overlay on large pic
+        document.getElementById("picPreviewOverlay").style.display = "flex";
+
+        // Large avatar in Personal Info
+        const largeImg = document.getElementById("profilePicLargeImg");
+        const largePlaceholder = document.getElementById("profilePicLargePlaceholder");
+        largeImg.src = currentPhotoUrl;
+        largeImg.style.display = "block";
+        largeImg.classList.add("uploaded");
+        largePlaceholder.style.display = "none";
+
+        // Show remove button
+        document.getElementById("removeProfilePicBtn").style.display = "inline-block";
+      }
+
+      async function uploadProfilePicture(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API_BASE_URL}/profile/picture`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        let result;
+        try {
+          result = await res.json();
+        } catch (parseErr) {
+          throw new Error("Server returned an unexpected response. Please restart the server and try again.");
+        }
+        if (!res.ok) throw new Error(result.message || "Upload failed");
+        return result;
+      }
+
+      // Sidebar avatar upload
+      document.getElementById("avatarUploadInput").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const result = await uploadProfilePicture(file);
+          setAvatarImage(result.profilePicture);
+          showToast("Profile picture updated!", "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+        e.target.value = "";
+      });
+
+      // Large profile pic upload (Personal Info view)
+      document.getElementById("profilePicUploadInput").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const result = await uploadProfilePicture(file);
+          setAvatarImage(result.profilePicture);
+          showToast("Profile picture updated!", "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+        e.target.value = "";
+      });
+
+      // Remove profile picture
+      document.getElementById("removeProfilePicBtn").addEventListener("click", async () => {
+        try {
+          // Construct the full payload so other form fields don't get cleared by the backend
+          const payload = {
+            fullName: document.getElementById("fullName").value,
+            employeeCode: document.getElementById("employeeCode").value,
+            designation: document.getElementById("designation").value,
+            department: document.getElementById("department").value,
+            dateOfJoining: document.getElementById("dateOfJoining").value || null,
+            phone: document.getElementById("phone").value,
+            workLocation: document.getElementById("workLocation").value,
+            profilePicture: null
+          };
+          await saveProfile(payload, token);
+          
+          // Reset sidebar avatar
+          document.getElementById("avatarImage").style.display = "none";
+          document.getElementById("avatarPlaceholder").style.display = "flex";
+          // Reset large avatar
+          document.getElementById("profilePicLargeImg").style.display = "none";
+          document.getElementById("profilePicLargePlaceholder").style.display = "flex";
+          document.getElementById("removeProfilePicBtn").style.display = "none";
+          
+          // Reset preview state variables
+          currentPhotoUrl = null;
+          document.getElementById("avatarContainer").classList.remove("has-photo");
+          document.getElementById("picPreviewOverlay").style.display = "none";
+          
+          showToast("Profile picture removed", "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+
+      profileForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideAlertBanner(profileAlert);
+        setButtonLoading(profileSubmitBtn, true);
+
+        const payload = {
+          fullName: document.getElementById("fullName").value,
+          employeeCode: document.getElementById("employeeCode").value,
+          designation: document.getElementById("designation").value,
+          department: document.getElementById("department").value,
+          dateOfJoining: document.getElementById("dateOfJoining").value || null,
+          phone: document.getElementById("phone").value,
+          workLocation: document.getElementById("workLocation").value,
+        };
+
+        try {
+          await saveProfile(payload, token);
+          showToast("Profile saved", "success");
+
+          // Update sidebar info live
+          if (payload.fullName) {
+            document.getElementById("sidebarProfileName").textContent = payload.fullName;
+          }
+          if (payload.designation) {
+            document.getElementById("sidebarProfileRole").textContent = payload.designation;
+          } else if (payload.department) {
+            document.getElementById("sidebarProfileRole").textContent = payload.department;
+          }
+        } catch (err) {
+          showAlertBanner(profileAlert, err.message, "error");
+        } finally {
+          setButtonLoading(profileSubmitBtn, false);
+        }
+      });
+
+      const form = document.getElementById("healthForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const formAlert = document.getElementById("formAlert");
+      const recordsContainer = document.getElementById("recordsContainer");
+
+      function renderRecords(records) {
+        if (!records.length) {
+          recordsContainer.innerHTML = '<p class="empty-state">No entries yet — add your first check-in above.</p>';
+          return;
+        }
+        const rows = records.map((r) => {
+          const badgeClass = r.validationStatus === "flagged" ? "badge-flagged" : "badge-valid";
+          const flags = (r.validationFlags || []).map((f) => `<li>${f}</li>`).join("");
+          const bp = (r.bpSystolic && r.bpDiastolic) ? `${r.bpSystolic}/${r.bpDiastolic}` : "—";
+          return `
+            <tr>
+              <td style="text-align: center; vertical-align: middle;"><input type="checkbox" class="record-select-checkbox" data-id="${r.id}" checked style="cursor: pointer; transform: scale(1.15);"></td>
+              <td>${r.recordDate}</td>
+              <td>${r.bmi} <span style="color:var(--ink-muted)">(${r.bmiCategory})</span></td>
+              <td>${r.exerciseFrequency}</td>
+              <td>${r.sleepHours}h</td>
+              <td>${bp}</td>
+              <td>${r.stressLevel || "—"}</td>
+              <td>${r.attendanceStatus}</td>
+              <td>
+                <span class="badge ${badgeClass}">${r.validationStatus}</span>
+                ${flags ? `<ul class="flag-list">${flags}</ul>` : ""}
+              </td>
+              <td class="row-actions"><button data-id="${r.id}" class="deleteBtn">Delete</button></td>
+            </tr>`;
+        }).join("");
+
+        recordsContainer.innerHTML = `
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th style="width: 45px; text-align: center; vertical-align: middle;"><input type="checkbox" id="selectAllRecords" checked style="cursor: pointer; transform: scale(1.15);"></th>
+                <th>Date</th>
+                <th>BMI</th>
+                <th>Exercise</th>
+                <th>Sleep</th>
+                <th>BP</th>
+                <th>Stress</th>
+                <th>Attendance</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+
+        const selectAll = recordsContainer.querySelector("#selectAllRecords");
+        if (selectAll) {
+          selectAll.addEventListener("change", (e) => {
+            const checked = e.target.checked;
+            recordsContainer.querySelectorAll(".record-select-checkbox").forEach(cb => {
+              cb.checked = checked;
+            });
+          });
+        }
+
+        recordsContainer.querySelectorAll(".deleteBtn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            try {
+              await deleteHealthRecord(btn.dataset.id, token);
+              showToast("Entry deleted", "success");
+              loadRecords();
+            } catch (err) {
+              showToast(err.message, "error");
+            }
+          });
+        });
+      }
+
+      let allUserRecords = [];
+
+      async function loadRecords() {
+        try {
+          const data = await listHealthRecords(token);
+          allUserRecords = data.records || [];
+          const btnExportPDF = document.getElementById("btnExportPDF");
+          if (btnExportPDF) {
+            if (allUserRecords.length > 0) {
+              btnExportPDF.style.display = "inline-block";
+            } else {
+              btnExportPDF.style.display = "none";
+            }
+          }
+          renderRecords(data.records);
+          updateWellnessScore();
+        } catch (err) {
+          recordsContainer.innerHTML = `<p class="empty-state">Couldn't load your history: ${err.message}</p>`;
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideAlertBanner(formAlert);
+        setButtonLoading(submitBtn, true);
+
+        const payload = {
+          recordDate: document.getElementById("recordDate").value,
+          heightCm: document.getElementById("heightCm").value,
+          weightKg: document.getElementById("weightKg").value,
+          sleepHours: document.getElementById("sleepHours").value,
+          exerciseFrequency: document.getElementById("exerciseFrequency").value,
+          exerciseMinutesPerWeek: document.getElementById("exerciseMinutesPerWeek").value || 0,
+          waterIntakeLiters: document.getElementById("waterIntakeLiters").value || null,
+          bpSystolic: document.getElementById("bpSystolic").value || null,
+          bpDiastolic: document.getElementById("bpDiastolic").value || null,
+          restingHeartRate: document.getElementById("restingHeartRate").value || null,
+          stressLevel: document.getElementById("stressLevel").value || null,
+          smokingStatus: document.getElementById("smokingStatus").value || null,
+          alcoholConsumption: document.getElementById("alcoholConsumption").value || null,
+          attendanceStatus: document.getElementById("attendanceStatus").value,
+          checkupDate: document.getElementById("checkupDate").value || null,
+          checkupResult: document.getElementById("checkupResult").value || null,
+          checkupNotes: document.getElementById("checkupNotes").value,
+          assessmentNotes: document.getElementById("assessmentNotes").value,
+        };
+
+        try {
+          const result = await createHealthRecord(payload, token);
+          showToast("Entry saved", "success");
+          if (result.record.validationStatus === "flagged") {
+            showToast("Note: entry flagged for review — see history table", "error");
+          }
+          form.reset();
+          document.getElementById("recordDate").value = new Date().toISOString().split("T")[0];
+          loadRecords();
+          loadRiskPrediction();
+        } catch (err) {
+          showAlertBanner(formAlert, err.message, "error");
+        } finally {
+          setButtonLoading(submitBtn, false);
+        }
+      });
+
+      // =========================================================================
+      // Conversational Chatbot Assistant Logic
+      // =========================================================================
+      const chatQuestions = [
+        {
+          key: "recordDate",
+          label: "Date",
+          question: "Hi! Let's fill out your health check-in. What date is this entry for? 📅",
+          type: "date",
+          validationError: "Please enter a valid date.",
+          suggestions: [
+            { text: "Use Today", value: new Date().toISOString().split("T")[0] }
+          ]
+        },
+        {
+          key: "heightCm",
+          label: "Height",
+          question: "Great! What is your height in centimeters? (e.g. 170) 📏",
+          type: "number",
+          validationError: "Please enter a valid height between 50 and 250 cm.",
+          min: 50,
+          max: 250
+        },
+        {
+          key: "weightKg",
+          label: "Weight",
+          question: "Got it. And what is your weight in kilograms? (e.g. 68) ⚖️",
+          type: "number",
+          validationError: "Please enter a valid weight between 20 and 300 kg.",
+          min: 20,
+          max: 300
+        },
+        {
+          key: "sleepHours",
+          label: "Sleep",
+          question: "How many hours of sleep did you get on average last night? 😴",
+          type: "number",
+          validationError: "Please enter sleep hours between 0 and 24.",
+          min: 0,
+          max: 24,
+          suggestions: [
+            { text: "6", value: "6" },
+            { text: "7", value: "7" },
+            { text: "8", value: "8" },
+            { text: "9", value: "9" }
+          ]
+        },
+        {
+          key: "exerciseFrequency",
+          label: "Exercise Habit",
+          question: "How active is your exercise habit? 🏃‍♂️",
+          type: "select",
+          suggestions: [
+            { text: "Sedentary", value: "Sedentary" },
+            { text: "Light", value: "Light" },
+            { text: "Moderate", value: "Moderate" },
+            { text: "Active", value: "Active" }
+          ]
+        },
+        {
+          key: "exerciseMinutesPerWeek",
+          label: "Exercise Minutes",
+          question: "About how many minutes of exercise do you get per week? ⏱️",
+          type: "number",
+          validationError: "Please enter minutes between 0 and 2000.",
+          min: 0,
+          max: 2000,
+          suggestions: [
+            { text: "0", value: "0" },
+            { text: "60", value: "60" },
+            { text: "150", value: "150" },
+            { text: "300", value: "300" }
+          ]
+        },
+        {
+          key: "waterIntakeLiters",
+          label: "Water Intake",
+          question: "What is your daily water intake in liters? 💧",
+          type: "number",
+          validationError: "Please enter water intake between 0 and 20L.",
+          min: 0,
+          max: 20,
+          suggestions: [
+            { text: "1.5", value: "1.5" },
+            { text: "2.0", value: "2" },
+            { text: "2.5", value: "2.5" },
+            { text: "3.0", value: "3" }
+          ]
+        },
+        {
+          key: "bpSystolic",
+          label: "BP - Systolic",
+          question: "What is your systolic blood pressure (upper reading, e.g. 120)? 🩸",
+          type: "number",
+          validationError: "Please enter a valid systolic pressure (50 to 250).",
+          min: 50,
+          max: 250,
+          suggestions: [
+            { text: "120", value: "120" }
+          ]
+        },
+        {
+          key: "bpDiastolic",
+          label: "BP - Diastolic",
+          question: "What is your diastolic blood pressure (lower reading, e.g. 80)? 🩸",
+          type: "number",
+          validationError: "Please enter a valid diastolic pressure (30 to 180).",
+          min: 30,
+          max: 180,
+          suggestions: [
+            { text: "80", value: "80" }
+          ]
+        },
+        {
+          key: "restingHeartRate",
+          label: "Heart Rate",
+          question: "What is your resting heart rate in bpm? 💓",
+          type: "number",
+          validationError: "Please enter a valid heart rate (30 to 200).",
+          min: 30,
+          max: 200,
+          suggestions: [
+            { text: "60", value: "60" },
+            { text: "72", value: "72" },
+            { text: "80", value: "80" }
+          ]
+        },
+        {
+          key: "stressLevel",
+          label: "Stress Level",
+          question: "How would you describe your stress level this week? 🧠",
+          type: "select",
+          suggestions: [
+            { text: "Low", value: "Low" },
+            { text: "Medium", value: "Medium" },
+            { text: "High", value: "High" }
+          ]
+        },
+        {
+          key: "smokingStatus",
+          label: "Smoking",
+          question: "What is your smoking status? 🚬",
+          type: "select",
+          suggestions: [
+            { text: "Never", value: "Never" },
+            { text: "Former", value: "Former" },
+            { text: "Current", value: "Current" }
+          ]
+        },
+        {
+          key: "alcoholConsumption",
+          label: "Alcohol",
+          question: "What is your alcohol consumption? 🍷",
+          type: "select",
+          suggestions: [
+            { text: "None", value: "None" },
+            { text: "Occasional", value: "Occasional" },
+            { text: "Regular", value: "Regular" }
+          ]
+        },
+        {
+          key: "attendanceStatus",
+          label: "Attendance",
+          question: "What was your attendance status today? 🏢",
+          type: "select",
+          suggestions: [
+            { text: "Present", value: "Present" },
+            { text: "Work from home", value: "WFH" },
+            { text: "On leave", value: "Leave" },
+            { text: "Absent", value: "Absent" }
+          ]
+        },
+        {
+          key: "checkupDate",
+          label: "Check-up Date",
+          question: "Have you had a medical check-up recently? (Optional) 🩺",
+          type: "date-optional",
+          suggestions: [
+            { text: "Skip / None", value: "" }
+          ]
+        },
+        {
+          key: "checkupResult",
+          label: "Check-up Result",
+          question: "What was the result of that check-up? 📋",
+          type: "select-optional",
+          suggestions: [
+            { text: "Normal", value: "Normal" },
+            { text: "Needs attention", value: "NeedsAttention" },
+            { text: "Critical", value: "Critical" },
+            { text: "Skip", value: "" }
+          ]
+        },
+        {
+          key: "checkupNotes",
+          label: "Check-up Notes",
+          question: "Any specific notes from that check-up? (Optional) 📝",
+          type: "text-optional",
+          suggestions: [
+            { text: "Skip", value: "" }
+          ]
+        },
+        {
+          key: "assessmentNotes",
+          label: "Self-Assessment",
+          question: "Lastly, how are you feeling overall this week? (Optional) 😊",
+          type: "text-optional",
+          suggestions: [
+            { text: "Skip", value: "" }
+          ]
+        }
+      ];
+
+      let chatCurrentIndex = 0;
+      let chatAnswers = {};
+
+      const btnManualMode = document.getElementById("btnManualMode");
+      const btnChatMode = document.getElementById("btnChatMode");
+      const healthForm = document.getElementById("healthForm");
+      const chatWizardContainer = document.getElementById("chatWizardContainer");
+
+      const chatHistory = document.getElementById("chatHistory");
+      const chatSuggestions = document.getElementById("chatSuggestions");
+      const chatInput = document.getElementById("chatInput");
+      const chatMicBtn = document.getElementById("chatMicBtn");
+      const chatSendBtn = document.getElementById("chatSendBtn");
+      const chatBackBtn = document.getElementById("chatBackBtn");
+      const chatRestartBtn = document.getElementById("chatRestartBtn");
+      const chatProgressBar = document.getElementById("chatProgressBar");
+
+      btnManualMode?.addEventListener("click", () => {
+        btnManualMode.classList.add("active");
+        btnChatMode.classList.remove("active");
+        healthForm.style.display = "block";
+        if (chatWizardContainer) chatWizardContainer.style.display = "none";
+        shouldAutoListen = false;
+        if (recognition && isListening) {
+          recognition.stop();
+        }
+      });
+
+      btnChatMode?.addEventListener("click", () => {
+        btnChatMode.classList.add("active");
+        btnManualMode.classList.remove("active");
+        healthForm.style.display = "none";
+        if (chatWizardContainer) chatWizardContainer.style.display = "flex";
+        startChatConversation();
+      });
+
+      // Voice Dictation (Speech-to-Text) using Web Speech API
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition = null;
+      let aiVoiceListening = false;
+      let shouldAutoListen = false; // Add global auto-listen state
+      let voiceSubmitTimeout = null; // Add voice auto-submit timeout reference
+      
+      const spokenNumbers = {
+        "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7, "eighth": 8, "ninth": 9, "tenth": 10,
+        "eleventh": 11, "twelfth": 12, "thirteenth": 13, "fourteenth": 14, "fifteenth": 15, "sixteenth": 16, "seventeenth": 17, "eighteenth": 18, "nineteenth": 19, "twentieth": 20,
+        "twenty first": 21, "twenty second": 22, "twenty third": 23, "twenty fourth": 24, "twenty fifth": 25, "twenty sixth": 26, "twenty seventh": 27, "twenty eighth": 28, "twenty ninth": 29, "thirtieth": 30,
+        "thirty first": 31,
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+        "thirty": 30
+      };
+
+      // Spoken date parsing utility
+      function parseSpokenDate(text) {
+        let clean = text.toLowerCase().trim().replace(/’s/g, "").replace(/'s/g, "");
+        
+        // 1. Relative dates
+        if (clean.includes("today")) {
+          return new Date().toISOString().split("T")[0];
+        }
+        if (clean.includes("yesterday")) {
+          const d = new Date();
+          d.setDate(d.getDate() - 1);
+          return d.toISOString().split("T")[0];
+        }
+        
+        // 2. Map word numbers
+        let day = null;
+        for (const [word, val] of Object.entries(spokenNumbers)) {
+          if (clean === word || clean.startsWith(word + " ") || clean.endsWith(" " + word)) {
+            day = val;
+            break;
+          }
+        }
+        
+        // 3. Regex matching digits
+        if (!day) {
+          const match = clean.match(/\d+/);
+          if (match) {
+            day = parseInt(match[0]);
+          }
+        }
+        
+        // 4. Resolve full spoken dates (e.g. "july 22", "22nd july")
+        const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+                        "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        let hasMonth = false;
+        for (const m of months) {
+          if (clean.includes(m)) {
+            hasMonth = true;
+            break;
+          }
+        }
+        
+        if (hasMonth) {
+          const cleanedText = clean.replace(/(\d+)(st|nd|rd|th)/g, "$1");
+          const parsed = Date.parse(cleanedText);
+          if (!isNaN(parsed)) {
+            return new Date(parsed).toISOString().split("T")[0];
+          }
+          // Fallback if year is missing
+          const parsedWithYear = Date.parse(cleanedText + " " + new Date().getFullYear());
+          if (!isNaN(parsedWithYear)) {
+            return new Date(parsedWithYear).toISOString().split("T")[0];
+          }
+        }
+        
+        // 5. If it's just a raw day number, use current month/year
+        if (day && day >= 1 && day <= 31) {
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, "0");
+          const d = String(day).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        }
+        
+        return null;
+      }
+      
+      if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        
+        recognition.onstart = () => {
+          isListening = true;
+          shouldAutoListen = true; // Turn on continuous listening mode once mic is manually clicked
+          chatMicBtn.textContent = "🛑";
+          chatMicBtn.style.background = "var(--danger)";
+          chatMicBtn.style.color = "#fff";
+          chatMicBtn.style.borderColor = "var(--danger)";
+          showToast("Listening... speak your answer now.", "success");
+        };
+        
+        recognition.onend = () => {
+          isListening = false;
+          chatMicBtn.textContent = "🎤";
+          chatMicBtn.style.background = "";
+          chatMicBtn.style.color = "";
+          chatMicBtn.style.borderColor = "";
+        };
+        
+        recognition.onerror = (event) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error === 'not-allowed') {
+            showToast("Microphone access denied. Please enable it in browser settings.", "error");
+          } else {
+            showToast("Speech recognition failed. Please try again.", "error");
+          }
+        };
+        
+        recognition.onresult = (event) => {
+          const speechToText = event.results[0][0].transcript.trim();
+          const cleanSpeech = speechToText.toLowerCase().trim();
+          showToast(`Heard: "${speechToText}"`, "success");
+          
+          // Voice Navigation Commands
+          if (cleanSpeech === "go back" || cleanSpeech === "back" || cleanSpeech === "previous") {
+            chatBackBtn.click();
+            return;
+          }
+          if (cleanSpeech === "restart" || cleanSpeech === "start over") {
+            chatRestartBtn.click();
+            return;
+          }
+          
+          const q = chatQuestions[chatCurrentIndex];
+          if (!q) return;
+          
+          // Clear any pending auto-submit timeout
+          if (voiceSubmitTimeout) clearTimeout(voiceSubmitTimeout);
+          
+          // 1. Handle dates
+          if (q.type.includes("date")) {
+            if (q.type.includes("optional") && (cleanSpeech.includes("skip") || cleanSpeech.includes("none"))) {
+              chatInput.value = "";
+              voiceSubmitTimeout = setTimeout(() => handleUserResponse("", "Skip"), 2000);
+              return;
+            }
+            const parsedDate = parseSpokenDate(speechToText);
+            if (parsedDate) {
+              chatInput.value = parsedDate;
+              voiceSubmitTimeout = setTimeout(() => handleUserResponse(parsedDate, parsedDate), 2000);
+              return;
+            } else {
+              // Inform the user and do not auto-submit
+              addBotMessage(`⚠️ I couldn't understand "${speechToText}" as a date. Please try saying "today", "yesterday", or speak a date like "July 22" (or say "skip").`);
+              return;
+            }
+          }
+          
+          // 2. Handle select/suggestions mapping (only for select/text inputs, not numbers!)
+          if (!q.type.includes("number") && q.suggestions && q.suggestions.length > 0) {
+            let matched = null;
+            for (const s of q.suggestions) {
+              const lowerText = s.text.toLowerCase();
+              const lowerVal = String(s.value).toLowerCase();
+              if (cleanSpeech === lowerText || cleanSpeech === lowerVal || 
+                  cleanSpeech.includes(lowerText) || (lowerVal && cleanSpeech.includes(lowerVal))) {
+                matched = s;
+                break;
+              }
+            }
+            if (matched) {
+              chatInput.value = matched.value;
+              voiceSubmitTimeout = setTimeout(() => handleUserResponse(matched.value, String(matched.value)), 2000);
+              return;
+            }
+          }
+          
+          // 3. Handle numbers extraction
+          if (q.type === "number") {
+            const match = speechToText.match(/\d+(\.\d+)?/);
+            if (match) {
+              const num = parseFloat(match[0]);
+              chatInput.value = num;
+              voiceSubmitTimeout = setTimeout(() => handleUserResponse(num, `${num}`), 2000);
+              return;
+            } else if (cleanSpeech.includes("skip") || cleanSpeech.includes("none")) {
+              chatInput.value = "";
+              voiceSubmitTimeout = setTimeout(() => handleUserResponse("", "Skip"), 2000);
+              return;
+            } else {
+              // Inform the user and do not auto-submit
+              addBotMessage(`⚠️ I couldn't extract a valid number from "${speechToText}". Please speak a clean number or say "skip".`);
+              return;
+            }
+          }
+          
+          // Fallback: fill standard text response and submit (only for text questions!)
+          chatInput.value = speechToText;
+          voiceSubmitTimeout = setTimeout(() => {
+            sendResponse();
+          }, 2000);
+        };
+        
+        chatMicBtn?.addEventListener("click", () => {
+          if (voiceSubmitTimeout) {
+            clearTimeout(voiceSubmitTimeout);
+            voiceSubmitTimeout = null;
+          }
+          if (isListening) {
+            shouldAutoListen = false; // Turn off continuous mode if manually toggled off
+            recognition.stop();
+          } else {
+            shouldAutoListen = true;
+            recognition.start();
+          }
+        });
+
+        // Add pause listener: typing or focusing the input pauses the auto-submit countdown
+        const pauseVoiceSubmit = () => {
+          if (voiceSubmitTimeout) {
+            clearTimeout(voiceSubmitTimeout);
+            voiceSubmitTimeout = null;
+            showToast("Voice auto-submit paused. Edit manually and press Enter.", "info");
+          }
+        };
+        chatInput?.addEventListener("input", pauseVoiceSubmit);
+        chatInput?.addEventListener("focus", pauseVoiceSubmit);
+        chatInput?.addEventListener("click", pauseVoiceSubmit);
+      } else {
+        if (chatMicBtn) chatMicBtn.style.display = "none";
+      }
+
+      function startChatConversation() {
+        chatCurrentIndex = 0;
+        chatAnswers = {};
+        chatHistory.innerHTML = "";
+        shouldAutoListen = false; // Reset continuous voice state
+        
+        // Reset controls visibility
+        document.getElementById("chatInputWrapper").style.display = "flex";
+        chatSendBtn.style.display = "inline-block";
+        if (SpeechRecognition) chatMicBtn.style.display = "flex";
+
+        addBotMessage("Hi! I'm your wellness assistant. Let's quickly log your health check-in step-by-step. 🌟");
+        askQuestion();
+      }
+
+      function addBotMessage(text) {
+        if (!chatHistory) return;
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble bot";
+        bubble.innerHTML = text;
+        chatHistory.appendChild(bubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+
+      function addUserMessage(text, key) {
+        if (!chatHistory) return;
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble user";
+        if (key) {
+          bubble.dataset.key = key;
+          bubble.innerHTML = `
+            <span>${text}</span>
+            <button type="button" class="bubble-edit-btn" onclick="editBubbleField('${key}', this)" style="background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; font-size:10px; margin-left:8px; display:none;" title="Edit this answer">✏️</button>
+          `;
+          
+          bubble.addEventListener("mouseenter", () => {
+            const editBtn = bubble.querySelector(".bubble-edit-btn");
+            if (editBtn && !bubble.querySelector("input") && !bubble.querySelector("select")) {
+              editBtn.style.display = "inline";
+            }
+          });
+          bubble.addEventListener("mouseleave", () => {
+            const editBtn = bubble.querySelector(".bubble-edit-btn");
+            if (editBtn) editBtn.style.display = "none";
+          });
+        } else {
+          bubble.textContent = text;
+        }
+        chatHistory.appendChild(bubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+
+      // Inline Bubble Editing Handler (edit mid-survey answers without backtracking)
+      window.editBubbleField = function(key, btn) {
+        const bubble = btn.closest(".chat-bubble");
+        const span = bubble.querySelector("span");
+        if (!span) return;
+
+        span.style.display = "none";
+        btn.style.display = "none";
+
+        const qIndex = chatQuestions.findIndex(x => x.key === key);
+        const q = chatQuestions[qIndex];
+
+        let inputEl;
+        if (q.type.includes("date")) {
+          inputEl = document.createElement("input");
+          inputEl.type = "date";
+          inputEl.value = chatAnswers[key] || "";
+        } else if (q.type === "number") {
+          inputEl = document.createElement("input");
+          inputEl.type = "number";
+          inputEl.value = chatAnswers[key] || "";
+          if (q.min !== undefined) inputEl.min = q.min;
+          if (q.max !== undefined) inputEl.max = q.max;
+        } else if (q.type.includes("select")) {
+          inputEl = document.createElement("select");
+          if (q.type.includes("optional")) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Skip";
+            inputEl.appendChild(opt);
+          }
+          if (q.suggestions && q.suggestions.length > 0) {
+            q.suggestions.forEach(s => {
+              const opt = document.createElement("option");
+              opt.value = s.value;
+              opt.textContent = s.text;
+              if (chatAnswers[key] === s.value) opt.selected = true;
+              inputEl.appendChild(opt);
+            });
+          }
+        } else {
+          inputEl = document.createElement("input");
+          inputEl.type = "text";
+          inputEl.value = chatAnswers[key] || "";
+        }
+
+        // Style inline for the bubble theme
+        inputEl.style.padding = "2px 6px";
+        inputEl.style.fontSize = "12px";
+        inputEl.style.borderRadius = "4px";
+        inputEl.style.border = "1px solid rgba(255,255,255,0.3)";
+        inputEl.style.background = "rgba(0,0,0,0.2)";
+        inputEl.style.color = "#fff";
+        inputEl.style.outline = "none";
+        inputEl.style.maxWidth = "110px";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.textContent = "✔";
+        saveBtn.style.background = "#fff";
+        saveBtn.style.color = "var(--teal-900)";
+        saveBtn.style.border = "none";
+        saveBtn.style.borderRadius = "4px";
+        saveBtn.style.padding = "2px 6px";
+        saveBtn.style.cursor = "pointer";
+        saveBtn.style.fontSize = "11px";
+        saveBtn.style.fontWeight = "bold";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "✖";
+        cancelBtn.style.background = "rgba(255,255,255,0.2)";
+        cancelBtn.style.color = "#fff";
+        cancelBtn.style.border = "none";
+        cancelBtn.style.borderRadius = "4px";
+        cancelBtn.style.padding = "2px 6px";
+        cancelBtn.style.cursor = "pointer";
+        cancelBtn.style.fontSize = "11px";
+
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "inline-flex";
+        wrapper.style.alignItems = "center";
+        wrapper.style.gap = "4px";
+        wrapper.appendChild(inputEl);
+        wrapper.appendChild(saveBtn);
+        wrapper.appendChild(cancelBtn);
+
+        bubble.appendChild(wrapper);
+        inputEl.focus();
+
+        cancelBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          wrapper.remove();
+          span.style.display = "inline";
+          btn.style.display = "none";
+        });
+
+        saveBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let newValue = inputEl.value.trim();
+
+          if (q.type === "number") {
+            const num = parseFloat(newValue);
+            if (isNaN(num)) {
+              showToast("Please enter a valid number.", "error");
+              return;
+            }
+            if ((q.min !== undefined && num < q.min) || (q.max !== undefined && num > q.max)) {
+              showToast(q.validationError || "Value out of range.", "error");
+              return;
+            }
+            newValue = num;
+          } else if (q.type === "date") {
+            if (!newValue) {
+              showToast("Date is required.", "error");
+              return;
+            }
+          }
+
+          chatAnswers[key] = newValue;
+          span.textContent = newValue === "" || newValue === null ? "(Skipped)" : newValue;
+
+          // Clear dependent fields if checkupDate is cleared
+          if (key === "checkupDate" && !newValue) {
+            chatAnswers["checkupResult"] = null;
+            chatAnswers["checkupNotes"] = "";
+
+            const resultBubble = chatHistory.querySelector(`.chat-bubble.user[data-key="checkupResult"]`);
+            if (resultBubble) {
+              const resSpan = resultBubble.querySelector("span");
+              if (resSpan) resSpan.textContent = "(Skipped)";
+            }
+            const notesBubble = chatHistory.querySelector(`.chat-bubble.user[data-key="checkupNotes"]`);
+            if (notesBubble) {
+              const notesSpan = notesBubble.querySelector("span");
+              if (notesSpan) notesSpan.textContent = "(Skipped)";
+            }
+            showToast("Cleared check-up details because date was removed.", "info");
+          }
+
+          wrapper.remove();
+          span.style.display = "inline";
+          btn.style.display = "none";
+          showToast("Answer updated!", "success");
+        });
+      };
+
+      function askQuestion() {
+        if (!chatWizardContainer) return;
+        if (chatCurrentIndex >= chatQuestions.length) {
+          showSummary();
+          return;
+        }
+
+        // Restore input area visibility if we navigated back from summary
+        document.getElementById("chatInputWrapper").style.display = "flex";
+        chatSendBtn.style.display = "inline-block";
+        if (SpeechRecognition) chatMicBtn.style.display = "flex";
+
+        const q = chatQuestions[chatCurrentIndex];
+
+        // Update Progress Bar
+        const pct = Math.round((chatCurrentIndex / chatQuestions.length) * 100);
+        chatProgressBar.style.width = pct + "%";
+
+        addBotMessage(q.question);
+
+        // Clear suggestions and inputs
+        chatSuggestions.innerHTML = "";
+        chatInput.value = "";
+        chatInput.placeholder = `Enter ${q.label}...`;
+
+        // Render input type overrides
+        if (q.type.includes("date")) {
+          chatInput.type = "date";
+        } else if (q.type === "number") {
+          chatInput.type = "number";
+          if (q.min !== undefined) chatInput.min = q.min;
+          if (q.max !== undefined) chatInput.max = q.max;
+        } else {
+          chatInput.type = "text";
+        }
+
+        // Focus input
+        setTimeout(() => chatInput.focus(), 50);
+
+        // Render Suggestions
+        if (q.suggestions && q.suggestions.length > 0) {
+          q.suggestions.forEach(s => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "suggestion-btn";
+            btn.textContent = s.text;
+            btn.addEventListener("click", () => {
+              handleUserResponse(s.value, s.text);
+            });
+            chatSuggestions.appendChild(btn);
+          });
+        }
+
+        // Update back button state
+        chatBackBtn.disabled = (chatCurrentIndex === 0);
+
+        // Auto-start voice if continuous voice mode is active
+        if (shouldAutoListen && SpeechRecognition && recognition && !isListening) {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.error("Autostart voice recognition error:", e);
+            }
+          }, 600);
+        }
+      }
+
+      function handleUserResponse(val, displayText) {
+        const q = chatQuestions[chatCurrentIndex];
+        let processedVal = val;
+
+        // Validate if manual input (no displayText provided)
+        if (displayText === undefined) {
+          displayText = val;
+          if (q.type === "number") {
+            const num = parseFloat(val);
+            if (isNaN(num)) {
+              addBotMessage("⚠️ That doesn't look like a number. Please enter a valid number.");
+              return;
+            }
+            if ((q.min !== undefined && num < q.min) || (q.max !== undefined && num > q.max)) {
+              addBotMessage(`⚠️ ${q.validationError || 'Input out of range.'}`);
+              return;
+            }
+            processedVal = num;
+          } else if (q.type === "date" || q.type === "date-optional") {
+            if (!val && q.type === "date") {
+              addBotMessage("⚠️ Please select a date.");
+              return;
+            }
+          }
+        }
+
+        // Add message
+        addUserMessage(displayText || "(Skipped)", q.key);
+
+        // Save answer
+        chatAnswers[q.key] = processedVal;
+
+        // Advance index
+        chatCurrentIndex++;
+
+        // Conditional Skip: if checkupDate is blank/skipped, skip checkupResult and checkupNotes!
+        if (q.key === "checkupDate" && !processedVal) {
+          chatAnswers["checkupResult"] = null;
+          chatAnswers["checkupNotes"] = "";
+          chatCurrentIndex += 2; // Skip next two questions
+        }
+
+        setTimeout(askQuestion, 400);
+      }
+
+      function sendResponse() {
+        const val = chatInput.value.trim();
+        const q = chatQuestions[chatCurrentIndex];
+
+        // For optional fields, empty input means Skip
+        if (!val && q.type.includes("optional")) {
+          handleUserResponse("", "Skip");
+          return;
+        }
+
+        if (!val) return;
+        handleUserResponse(val);
+      }
+
+      chatSendBtn?.addEventListener("click", sendResponse);
+      chatInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendResponse();
+        }
+      });
+
+      chatBackBtn?.addEventListener("click", () => {
+        if (chatCurrentIndex <= 0) return;
+        // Backtrack index
+        chatCurrentIndex--;
+        const prevQ = chatQuestions[chatCurrentIndex];
+
+        // If we skipped checkupResult/checkupNotes previously, back up further!
+        if (prevQ.key === "checkupNotes" && !chatAnswers["checkupDate"]) {
+          chatCurrentIndex -= 2;
+        }
+
+        // Delete last user and last bot bubbles from history
+        const bubbles = chatHistory?.querySelectorAll(".chat-bubble");
+        if (bubbles && bubbles.length >= 2) {
+          bubbles[bubbles.length - 1].remove(); // User bubble
+          bubbles[bubbles.length - 2].remove(); // Bot bubble
+        }
+
+        askQuestion();
+      });
+
+      chatRestartBtn?.addEventListener("click", startChatConversation);
+
+      // Professional PDF Health Report Exporter using html2pdf.js
+      const btnExportPDF = document.getElementById("btnExportPDF");
+      if (btnExportPDF) {
+        btnExportPDF.addEventListener("click", () => {
+          // Find checked record IDs
+          const checkedCheckboxes = document.querySelectorAll(".record-select-checkbox:checked");
+          if (checkedCheckboxes.length === 0) {
+            showToast("Please select at least one wellness record to export.", "error");
+            return;
+          }
+
+          showToast("Generating your health report...", "success");
+
+          const checkedIds = Array.from(checkedCheckboxes).map(cb => String(cb.dataset.id));
+          const recordsToExport = allUserRecords.filter(r => checkedIds.includes(String(r.id)));
+
+          // Get profile information
+          const employeeName = document.getElementById("sidebarProfileName").textContent || "Employee";
+          const employeeRole = document.getElementById("sidebarProfileRole").textContent || "N/A";
+          
+          // Decode email from JWT token safely
+          let employeeEmail = "N/A";
+          try {
+            if (token) {
+              const base64Url = token.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+              employeeEmail = JSON.parse(jsonPayload).email || "N/A";
+            }
+          } catch (e) {
+            console.error("Error decoding JWT payload:", e);
+          }
+
+          // Calculate Averages safely
+          let totalSleep = 0;
+          let totalBMI = 0;
+          let totalScore = 0;
+          let highRiskCount = 0;
+          let validSleepCount = 0;
+          let validBMICount = 0;
+          let validScoreCount = 0;
+
+          recordsToExport.forEach(r => {
+            if (r.sleepHours !== null && r.sleepHours !== undefined) {
+              totalSleep += parseFloat(r.sleepHours) || 0;
+              validSleepCount++;
+            }
+            if (r.bmi !== null && r.bmi !== undefined) {
+              totalBMI += parseFloat(r.bmi) || 0;
+              validBMICount++;
+            }
+            if (r.healthScore !== null && r.healthScore !== undefined) {
+              totalScore += parseFloat(r.healthScore) || 0;
+              validScoreCount++;
+            }
+            if (r.riskLevel === "High") highRiskCount++;
+          });
+
+          const avgSleep = validSleepCount > 0 ? (totalSleep / validSleepCount).toFixed(1) : "—";
+          const avgBMI = validBMICount > 0 ? (totalBMI / validBMICount).toFixed(1) : "—";
+          const avgScore = validScoreCount > 0 ? Math.round(totalScore / validScoreCount) : "—";
+          const overallRisk = highRiskCount > 0 ? "High" : (avgScore !== "—" && avgScore < 60 ? "Medium" : "Low");
+
+          try {
+            const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+            if (!jsPDFClass) {
+              throw new Error("jsPDF library not loaded");
+            }
+            // Explicitly set unit to mm and format to a4 (210 x 297 mm)
+            const doc = new jsPDFClass({ orientation: "portrait", unit: "mm", format: "a4" });
+
+            // Document branding
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(15, 61, 57); // #0f3d39
+            doc.text("WELLSPRING ANALYTICS", 20, 25);
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(91, 107, 100); // #5b6b64
+            doc.text("CORPORATE EMPLOYEE WELLNESS REPORT", 20, 32);
+
+            doc.setDrawColor(15, 61, 57);
+            doc.setLineWidth(0.5);
+            doc.line(20, 36, 190, 36);
+
+            // Employee Details Section
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(20, 38, 33);
+            doc.text("EMPLOYEE DETAILS", 20, 48);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Name: ${employeeName}`, 20, 56);
+            doc.text(`Role: ${employeeRole}`, 20, 62);
+            doc.text(`Email: ${employeeEmail}`, 20, 68);
+            doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 130, 56);
+
+            // Key Metrics Summary Section
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("WELLNESS METRICS SUMMARY", 20, 82);
+
+            // Draw a light grey bounding box for metrics
+            doc.setFillColor(246, 250, 248); // #f6faf8
+            doc.rect(20, 87, 170, 20, "F");
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 61, 57);
+            doc.text(`Health Score: ${avgScore}`, 25, 95);
+            doc.text(`Body Mass Index (BMI): ${avgBMI}`, 25, 101);
+            doc.text(`Avg Sleep: ${avgSleep} hrs`, 110, 95);
+            doc.text(`Risk Profile: ${overallRisk}`, 110, 101);
+
+            // Vitals History Table
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(20, 38, 33);
+            doc.text("VITALS & ENTRY HISTORY", 20, 120);
+
+            // Draw Table Header Bar
+            doc.setFillColor(15, 61, 57);
+            doc.rect(20, 125, 170, 8, "F");
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Date", 22, 130);
+            doc.text("BMI", 45, 130);
+            doc.text("Exercise", 70, 130);
+            doc.text("Sleep", 95, 130);
+            doc.text("BP", 112, 130);
+            doc.text("Stress", 130, 130);
+            doc.text("Attendance", 150, 130);
+            doc.text("Status", 175, 130);
+
+            // Table Rows
+            doc.setTextColor(20, 38, 33);
+            doc.setFont("helvetica", "normal");
+            let y = 140;
+
+            recordsToExport.forEach((r, idx) => {
+              if (y > 270) {
+                doc.addPage();
+                y = 25;
+                // Repeat headers on new page
+                doc.setFillColor(15, 61, 57);
+                doc.rect(20, y - 6, 170, 8, "F");
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(255, 255, 255);
+                doc.text("Date", 22, y - 1);
+                doc.text("BMI", 45, y - 1);
+                doc.text("Exercise", 70, y - 1);
+                doc.text("Sleep", 95, y - 1);
+                doc.text("BP", 112, y - 1);
+                doc.text("Stress", 130, y - 1);
+                doc.text("Attendance", 150, y - 1);
+                doc.text("Status", 175, y - 1);
+                doc.setTextColor(20, 38, 33);
+                doc.setFont("helvetica", "normal");
+                y += 10;
+              }
+
+              const bp = (r.bpSystolic && r.bpDiastolic) ? `${r.bpSystolic}/${r.bpDiastolic}` : "—";
+              const statusText = (r.validationStatus || 'valid').toUpperCase();
+              const bmiVal = r.bmi !== null && r.bmi !== undefined ? `${r.bmi} (${r.bmiCategory || '—'})` : "—";
+              const exerciseVal = r.exerciseFrequency || "—";
+              const sleepVal = r.sleepHours !== null && r.sleepHours !== undefined ? `${r.sleepHours} hrs` : "—";
+              const stressVal = r.stressLevel !== null && r.stressLevel !== undefined ? String(r.stressLevel) : "—";
+              const attendanceVal = r.attendanceStatus || "—";
+
+              // Draw horizontal boundary line
+              doc.setDrawColor(221, 232, 226);
+              doc.setLineWidth(0.2);
+              doc.line(20, y + 2, 190, y + 2);
+
+              doc.text(String(r.recordDate), 22, y);
+              doc.text(String(bmiVal), 45, y);
+              doc.text(String(exerciseVal), 70, y);
+              doc.text(String(sleepVal), 95, y);
+              doc.text(bp, 112, y);
+              doc.text(String(stressVal), 130, y);
+              doc.text(String(attendanceVal), 150, y);
+              doc.text(statusText, 175, y);
+
+              y += 8;
+            });
+
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(138, 154, 147);
+            doc.text("WellSpring Analytics Confidential Document - personal wellness planning metrics only.", 20, 285);
+
+            // Save PDF
+            doc.save(`${employeeName.replace(/\s+/g, '_')}_Health_Report.pdf`);
+            showToast("Report downloaded successfully!", "success");
+          } catch (err) {
+            console.error("PDF generation error:", err);
+            showToast("Failed to generate PDF. Falling back to print...", "error");
+            window.print();
+          }
+        });
+      }
+
+      function showSummary() {
+        shouldAutoListen = false; // Turn off voice autostart when survey finishes
+        chatProgressBar.style.width = "100%";
+        addBotMessage("Fantastic! We have gathered all your check-in details. Please review them below before saving: 📝");
+
+        // Clear suggestions and input area
+        chatSuggestions.innerHTML = "";
+        chatInput.value = "";
+        document.getElementById("chatInputWrapper").style.display = "none";
+        chatSendBtn.style.display = "none";
+        chatMicBtn.style.display = "none";
+
+        // Build summary grid
+        const summaryGrid = document.createElement("div");
+        summaryGrid.className = "chat-summary-grid";
+
+        chatQuestions.forEach(q => {
+          let val = chatAnswers[q.key];
+          if (val === undefined || val === null || val === "") {
+            val = "—";
+          }
+          
+          const item = document.createElement("div");
+          item.className = "chat-summary-item";
+          item.innerHTML = `
+            <span class="chat-summary-label">${q.label}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="chat-summary-value" id="summary-val-${q.key}">${val}</span>
+              <button type="button" class="summary-edit-btn" onclick="editSummaryField('${q.key}')" style="background:none; border:none; color:var(--teal-700); cursor:pointer; font-size:12px; padding:2px 4px;" title="Edit this field">✏️</button>
+            </div>
+          `;
+          summaryGrid.appendChild(item);
+        });
+
+        chatHistory.appendChild(summaryGrid);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // Create submit button
+        const submitContainer = document.createElement("div");
+        submitContainer.style.display = "flex";
+        submitContainer.style.justifyContent = "center";
+        submitContainer.style.marginTop = "15px";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn btn-primary";
+        saveBtn.style.padding = "12px 30px";
+        saveBtn.style.fontSize = "15px";
+        saveBtn.style.boxShadow = "var(--shadow-btn)";
+        saveBtn.innerHTML = "💾 Save Entry & Submit";
+
+        saveBtn.addEventListener("click", async () => {
+          setButtonLoading(saveBtn, true);
+          try {
+            const payload = {
+              recordDate: chatAnswers["recordDate"],
+              heightCm: parseFloat(chatAnswers["heightCm"]),
+              weightKg: parseFloat(chatAnswers["weightKg"]),
+              sleepHours: parseFloat(chatAnswers["sleepHours"]),
+              exerciseFrequency: chatAnswers["exerciseFrequency"],
+              exerciseMinutesPerWeek: parseInt(chatAnswers["exerciseMinutesPerWeek"]) || 0,
+              waterIntakeLiters: chatAnswers["waterIntakeLiters"] ? parseFloat(chatAnswers["waterIntakeLiters"]) : null,
+              bpSystolic: chatAnswers["bpSystolic"] ? parseInt(chatAnswers["bpSystolic"]) : null,
+              bpDiastolic: chatAnswers["bpDiastolic"] ? parseInt(chatAnswers["bpDiastolic"]) : null,
+              restingHeartRate: chatAnswers["restingHeartRate"] ? parseInt(chatAnswers["restingHeartRate"]) : null,
+              stressLevel: chatAnswers["stressLevel"] || null,
+              smokingStatus: chatAnswers["smokingStatus"] || null,
+              alcoholConsumption: chatAnswers["alcoholConsumption"] || null,
+              attendanceStatus: chatAnswers["attendanceStatus"],
+              checkupDate: chatAnswers["checkupDate"] || null,
+              checkupResult: chatAnswers["checkupResult"] || null,
+              checkupNotes: chatAnswers["checkupNotes"] || "",
+              assessmentNotes: chatAnswers["assessmentNotes"] || "",
+            };
+
+            const result = await createHealthRecord(payload, token);
+            showToast("Entry saved successfully", "success");
+            if (result.record.validationStatus === "flagged") {
+              showToast("Note: entry flagged for review — see history table", "error");
+            }
+            
+            // Switch back to manual mode and reset
+            btnManualMode.click();
+            form.reset();
+            loadRecords();
+          } catch (err) {
+            showToast(err.message, "error");
+          } finally {
+            setButtonLoading(saveBtn, false);
+          }
+        });
+
+        submitContainer.appendChild(saveBtn);
+        chatHistory.appendChild(submitContainer);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+
+      // Inline Summary Editing Handler
+      window.editSummaryField = function(key) {
+        const qIndex = chatQuestions.findIndex(x => x.key === key);
+        const q = chatQuestions[qIndex];
+        const valContainer = document.getElementById(`summary-val-${key}`);
+        if (!valContainer) return;
+        const parentContainer = valContainer.parentElement;
+
+        // Hide value and edit button
+        valContainer.style.display = "none";
+        const editBtn = parentContainer.querySelector(".summary-edit-btn");
+        if (editBtn) editBtn.style.display = "none";
+
+        // Create inline input element based on question type
+        let inputEl;
+        if (q.type.includes("date")) {
+          inputEl = document.createElement("input");
+          inputEl.type = "date";
+          inputEl.value = chatAnswers[key] || "";
+        } else if (q.type === "number") {
+          inputEl = document.createElement("input");
+          inputEl.type = "number";
+          inputEl.value = chatAnswers[key] || "";
+          if (q.min !== undefined) inputEl.min = q.min;
+          if (q.max !== undefined) inputEl.max = q.max;
+        } else if (q.type.includes("select")) {
+          inputEl = document.createElement("select");
+          if (q.type.includes("optional")) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Skip";
+            inputEl.appendChild(opt);
+          }
+          if (q.suggestions && q.suggestions.length > 0) {
+            q.suggestions.forEach(s => {
+              const opt = document.createElement("option");
+              opt.value = s.value;
+              opt.textContent = s.text;
+              if (chatAnswers[key] === s.value) opt.selected = true;
+              inputEl.appendChild(opt);
+            });
+          }
+        } else {
+          inputEl = document.createElement("input");
+          inputEl.type = "text";
+          inputEl.value = chatAnswers[key] || "";
+        }
+
+        // Apply clean inline styling
+        inputEl.style.padding = "4px 8px";
+        inputEl.style.fontSize = "12px";
+        inputEl.style.borderRadius = "4px";
+        inputEl.style.border = "1px solid var(--border)";
+        inputEl.style.outline = "none";
+        inputEl.style.background = "var(--surface)";
+        inputEl.style.color = "var(--ink)";
+        inputEl.style.maxWidth = "130px";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.textContent = "✔";
+        saveBtn.style.background = "var(--teal-700)";
+        saveBtn.style.color = "#fff";
+        saveBtn.style.border = "none";
+        saveBtn.style.borderRadius = "4px";
+        saveBtn.style.padding = "4px 8px";
+        saveBtn.style.cursor = "pointer";
+        saveBtn.style.fontSize = "11px";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "✖";
+        cancelBtn.style.background = "#ccc";
+        cancelBtn.style.color = "#333";
+        cancelBtn.style.border = "none";
+        cancelBtn.style.borderRadius = "4px";
+        cancelBtn.style.padding = "4px 8px";
+        cancelBtn.style.cursor = "pointer";
+        cancelBtn.style.fontSize = "11px";
+
+        const editWrapper = document.createElement("div");
+        editWrapper.style.display = "flex";
+        editWrapper.style.alignItems = "center";
+        editWrapper.style.gap = "4px";
+        editWrapper.appendChild(inputEl);
+        editWrapper.appendChild(saveBtn);
+        editWrapper.appendChild(cancelBtn);
+
+        parentContainer.appendChild(editWrapper);
+        inputEl.focus();
+
+        cancelBtn.addEventListener("click", () => {
+          editWrapper.remove();
+          valContainer.style.display = "inline";
+          if (editBtn) editBtn.style.display = "inline";
+        });
+
+        saveBtn.addEventListener("click", () => {
+          let newValue = inputEl.value.trim();
+
+          // Validation check
+          if (q.type === "number") {
+            const num = parseFloat(newValue);
+            if (isNaN(num)) {
+              showToast("Please enter a valid number.", "error");
+              return;
+            }
+            if ((q.min !== undefined && num < q.min) || (q.max !== undefined && num > q.max)) {
+              showToast(q.validationError || "Value out of range.", "error");
+              return;
+            }
+            newValue = num;
+          } else if (q.type === "date") {
+            if (!newValue) {
+              showToast("Date is required.", "error");
+              return;
+            }
+          }
+
+          // Save changes
+          chatAnswers[key] = newValue;
+
+          // Update displays
+          valContainer.textContent = newValue === "" || newValue === null ? "—" : newValue;
+
+          // Special case: if they cleared checkupDate, clear dependent checkup fields
+          if (key === "checkupDate" && !newValue) {
+            chatAnswers["checkupResult"] = null;
+            chatAnswers["checkupNotes"] = "";
+            editWrapper.remove();
+            const activeSummaryGrid = document.querySelector(".chat-summary-grid");
+            if (activeSummaryGrid) {
+              const nextSib = activeSummaryGrid.nextElementSibling;
+              if (nextSib) nextSib.remove();
+              activeSummaryGrid.remove();
+            }
+            const bubbles = chatHistory.querySelectorAll(".chat-bubble.bot");
+            if (bubbles.length > 0) {
+              bubbles[bubbles.length - 1].remove();
+            }
+            showSummary();
+            return;
+          }
+
+          // Restore static layout
+          editWrapper.remove();
+          valContainer.style.display = "inline";
+          if (editBtn) editBtn.style.display = "inline";
+          showToast("Updated successfully", "success");
+        });
+      };
+
+      const reportForm = document.getElementById("reportForm");
+      const reportList = document.getElementById("reportList");
+
+      async function loadReports() {
+        try {
+          const data = await listReports(token);
+          reportList.innerHTML = "";
+
+          if (!data.reports || data.reports.length === 0) {
+            reportList.innerHTML = "No Reports Uploaded";
+            return;
+          }
+
+          data.reports.forEach(report => {
+            const div = document.createElement("div");
+            div.className = "panel";
+            div.innerHTML = `
+              <b>${report.reportName}</b>
+              <br>
+              ${report.reportType}
+              <br><br>
+              <button class="btn btn-secondary view-btn">View</button>
+              <button class="btn btn-secondary">Delete</button>
+            `;
+
+            div.querySelector(".view-btn").addEventListener("click", async () => {
+              try {
+                await viewReport(report.id, token);
+              } catch (err) {
+                showToast(err.message, "error");
+              }
+            });
+
+            div.querySelector("button:last-of-type").addEventListener("click", () => {
+              handleDeleteReport(report.id);
+            });
+
+            reportList.appendChild(div);
+          });
+        } catch (err) {
+          reportList.innerHTML = `<p class="field-error">Couldn't load reports: ${err.message}</p>`;
+        }
+      }
+
+      reportForm.addEventListener("submit", async function(e){
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append("reportName", document.getElementById("reportName").value);
+        formData.append("reportType", document.getElementById("reportType").value);
+        formData.append("file", document.getElementById("reportFile").files[0]);
+
+        try {
+          const data = await uploadReport(formData, token);
+          showToast(data.message || "Report uploaded successfully", "success");
+          reportForm.reset();
+          loadReports();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+
+      async function handleDeleteReport(id){
+        try {
+          const data = await deleteReport(id, token);
+          showToast(data.message || "Report deleted", "success");
+          loadReports();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+
+      const predictRiskBtn = document.getElementById("predictRiskBtn");
+
+      async function loadRiskPrediction(){
+        setButtonLoading(predictRiskBtn, true);
+        try {
+          const data = await getRiskPrediction(token);
+          
+          const levelLower = data.riskLevel.toLowerCase();
+          const dashoffset = 251.2 - (data.riskScore / 100) * 251.2;
+
+          const stressLower = data.prediction.stressRisk.toLowerCase();
+          const obesityLower = data.prediction.obesityRisk.toLowerCase();
+          const hyperLower = data.prediction.hypertensionRisk.toLowerCase();
+
+          const stressWidth = stressLower === "high" ? 100 : (stressLower === "medium" ? 60 : 20);
+          const obesityWidth = obesityLower === "high" ? 100 : (obesityLower === "medium" ? 60 : 20);
+          const hyperWidth = hyperLower === "high" ? 100 : (hyperLower === "medium" ? 60 : 20);
+
+          document.getElementById("riskResult").innerHTML = `
+            <div class="risk-summary">
+              <div class="risk-gauge-container glow-${levelLower}">
+                <div class="gauge-pulse-wave"></div>
+                <svg class="risk-gauge" viewBox="0 0 100 100">
+                  <circle class="gauge-bg" cx="50" cy="50" r="40" />
+                  <circle class="gauge-fill level-${levelLower}" cx="50" cy="50" r="40" 
+                          style="stroke-dasharray: 251.2; stroke-dashoffset: 251.2;" />
+                </svg>
+                <div class="gauge-center">
+                  <span class="gauge-value">0%</span>
+                  <span class="gauge-label">${data.riskLevel} Risk</span>
+                </div>
+              </div>
+              <div class="risk-metrics">
+                <div class="metric-card">
+                  <div class="metric-info">
+                    <span class="metric-title">Stress Risk</span>
+                    <span class="metric-badge badge-${stressLower}">${data.prediction.stressRisk}</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill fill-${stressLower}" style="width: 0%;"></div>
+                  </div>
+                </div>
     <!-- =====================================================
      LEADERBOARD VIEW
 ===================================================== -->
@@ -2857,22 +5750,132 @@ function updateProfileCompletion() {
       const btnToggleVoiceOutput = document.getElementById("btnToggleVoiceOutput");
       const btnClearChatHistory = document.getElementById("btnClearChatHistory");
       const floatingChatbotBtn = document.getElementById("floatingChatbotBtn");
+      const floatingSpeechBubble = document.getElementById("floatingSpeechBubble");
+
+      // Hover invitation trigger for floating widget
+      floatingChatbotBtn?.addEventListener("mouseenter", () => {
+        if (floatingSpeechBubble) {
+          floatingSpeechBubble.style.opacity = "1";
+          floatingSpeechBubble.style.transform = "translateY(0) scale(1)";
+        }
+      });
+      floatingChatbotBtn?.addEventListener("mouseleave", () => {
+        if (floatingSpeechBubble) {
+          floatingSpeechBubble.style.opacity = "0";
+          floatingSpeechBubble.style.transform = "translateY(8px) scale(0.9)";
+        }
+      });
 
       floatingChatbotBtn?.addEventListener("click", () => {
-        // Find and click the Chatbot nav button to switch view
-        const botNav = document.querySelector('.nav-item[data-view="chatbotView"]');
-        if (botNav) {
-          botNav.click();
+        const drawer = document.getElementById("floatingChatbotDrawer");
+        if (!drawer) return;
+        const isOpen = drawer.style.opacity === "1";
+        if (isOpen) {
+          drawer.style.opacity = "0";
+          drawer.style.transform = "translateY(30px) scale(0.95)";
+          drawer.style.pointerEvents = "none";
+          if (typeof stopAiSpeech === "function") {
+            stopAiSpeech();
+          }
+        } else {
+          drawer.style.opacity = "1";
+          drawer.style.transform = "translateY(0) scale(1)";
+          drawer.style.pointerEvents = "auto";
+          loadChatbotView();
+          setTimeout(() => {
+            chatInputText?.focus();
+          }, 150);
         }
-        setTimeout(() => {
-          chatInputText?.focus();
-        }, 150);
       });
+
+      document.getElementById("btnCloseChatbotDrawer")?.addEventListener("click", () => {
+        const drawer = document.getElementById("floatingChatbotDrawer");
+        if (drawer) {
+          drawer.style.opacity = "0";
+          drawer.style.transform = "translateY(30px) scale(0.95)";
+          drawer.style.pointerEvents = "none";
+        }
+        if (typeof stopAiSpeech === "function") {
+          stopAiSpeech();
+        }
+      });
+
+      // Lottie Companion Status Controller
+      function setCompanionStatus(status) {
+        const glow = document.getElementById("companionGlow");
+        const dot = document.getElementById("companionStatusDot");
+        const text = document.getElementById("companionStatusText");
+        const player = document.getElementById("lottieCompanion");
+        
+        if (!glow || !dot || !text || !player) return;
+        
+        if (status === "listening") {
+          glow.style.background = "radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#ef4444";
+          text.textContent = "Recording... Speak now";
+          text.style.color = "#ef4444";
+          player.setAttribute("speed", "1.25");
+        } else if (status === "thinking") {
+          glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#f59e0b";
+          text.textContent = "Coach is thinking...";
+          text.style.color = "#f59e0b";
+          player.setAttribute("speed", "1.5");
+        } else if (status === "speaking") {
+          glow.style.background = "radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%)";
+          dot.style.background = "#10b981";
+          text.textContent = "Coach is speaking...";
+          text.style.color = "#10b981";
+          player.setAttribute("speed", "1.0");
+        } else {
+          glow.style.background = "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%)";
+          dot.style.background = "#10b981";
+          text.textContent = "Companion Idle";
+          text.style.color = "#10b981";
+          player.setAttribute("speed", "0.85");
+        }
+      }
+
+      window.addEventListener("companion-status-changed", (e) => {
+        setCompanionStatus(e.detail);
+      });
+
+      // Update wellness context banner based on cached health scores
+      function updateChatbotContextBanner() {
+        const summaryEl = document.getElementById("wellnessContextSummary");
+        const proTipEl = document.getElementById("companionProTip");
+        if (!summaryEl) return;
+
+        let scoreText = "--";
+        let sleepText = "--";
+        let stressText = "--";
+
+        if (cachedEmpRecords && cachedEmpRecords.length > 0) {
+          const latest = cachedEmpRecords[0];
+          scoreText = `${latest.healthScore || latest.health_score || 0}%`;
+          sleepText = `${latest.sleepHours || latest.sleep_hours || 0} hrs`;
+          stressText = latest.stressLevel || latest.stress_level || "Low";
+        }
+
+        summaryEl.innerHTML = `Score: <strong style="color: #10b981;">${scoreText}</strong> | Sleep: <strong style="color: #3b82f6;">${sleepText}</strong> | Stress: <strong style="color: #f59e0b;">${stressText}</strong>`;
+
+        if (proTipEl) {
+          const tips = [
+            `Your average sleep is ${sleepText}. Try to keep screens away 45 minutes before sleeping for restorative rest.`,
+            `Your stress balance is ${stressText}. Try scheduling a quick 5-min stretch break to stay refreshed!`,
+            `Health Score is ${scoreText}. Tap 'Diet Plan' above to customize your nutritional macro ratios.`,
+            "Consistency is key! Log your daily water and activity metrics to claim more bonus points."
+          ];
+          proTipEl.textContent = tips[Math.floor(Math.random() * tips.length)];
+        }
+      }
 
       async function loadChatbotView() {
         try {
           requestNotificationPermission();
           startReminderScheduler(token);
+          updateChatbotContextBanner();
+          setCompanionStatus("idle");
           await Promise.all([
             fetchAndRenderChatHistory(),
             fetchAndRenderReminders(),
@@ -2891,7 +5894,7 @@ function updateProfileCompletion() {
 
           if (!messages.length) {
             // Render welcome message if history is empty
-            appendChatMessage("bot", "Hello! 👋 I am your **24/7 AI Wellness Assistant**.\n\nAsk me any health questions, or click the quick action chips above to schedule checkups, set reminders, or track your goals!");
+            appendChatMessage("bot", "Hello! 👋 I am your **24/7 AI Wellness Coach**. I am powered by Google Gemini and specialized in employee health, stress management, scheduling, and wellness reminders!\n\nAsk me any questions, or click the quick action chips above to start!");
             return;
           }
 
@@ -2930,7 +5933,7 @@ function updateProfileCompletion() {
 
         bubble.innerHTML = `
           <div style="font-size: 11px; font-weight: 700; opacity: 0.7; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            ${isBot ? '🤖 AI Wellness Assistant' : '👤 You'}
+            ${isBot ? '🤖 AI Wellness Coach' : '👤 You'}
           </div>
           <div>${formattedText}</div>
         `;
@@ -2955,7 +5958,8 @@ function updateProfileCompletion() {
 
         appendChatMessage("user", prompt);
         chatInputText.value = "";
-        chatTypingIndicator.style.display = "block";
+        chatTypingIndicator.style.display = "flex";
+        window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "thinking" }));
 
         try {
           const res = await sendChatMessage(prompt, token);
@@ -2975,9 +5979,18 @@ function updateProfileCompletion() {
             sendDesktopNotification("⏰ Reminder Set", `${res.actionData.reminder.title} (${res.actionData.reminder.timeStr})`);
             playNotificationChime();
           }
+          if (res.actionData?.navigate) {
+            const targetView = res.actionData.navigate;
+            const navBtn = document.querySelector(`.nav-item[data-view="${targetView}"]`);
+            if (navBtn) {
+              navBtn.click();
+              showToast(`Navigated to ${navBtn.textContent.trim()} Page`, "success");
+            }
+          }
         } catch (err) {
           chatTypingIndicator.style.display = "none";
           appendChatMessage("bot", `⚠️ ${err.message}`);
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
         }
       });
 
@@ -3007,17 +6020,25 @@ function updateProfileCompletion() {
           btnMicInput.style.color = "#fff";
           btnMicInput.textContent = "🔴";
           showToast("🎙️ Listening... Speak into your microphone now!", "info");
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "listening" }));
 
           initSpeechRecognition(
             (transcript) => {
               chatInputText.value = transcript;
               showToast(`Recognized: "${transcript}"`, "success");
+              window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+              if (typeof chatForm.requestSubmit === "function") {
+                chatForm.requestSubmit();
+              } else {
+                chatForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+              }
             },
             () => {
               isListening = false;
               btnMicInput.style.background = "";
               btnMicInput.style.color = "";
               btnMicInput.textContent = "🎙️";
+              window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
             }
           );
         } catch (err) {
@@ -3025,6 +6046,7 @@ function updateProfileCompletion() {
           btnMicInput.style.background = "";
           btnMicInput.style.color = "";
           btnMicInput.textContent = "🎙️";
+          window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
           showToast(err.message, "error");
         }
       });

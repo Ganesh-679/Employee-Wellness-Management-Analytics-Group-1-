@@ -113,6 +113,16 @@ function speakText(text) {
   const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Guy')));
   if (naturalVoice) utterance.voice = naturalVoice;
 
+  utterance.onstart = () => {
+    window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "speaking" }));
+  };
+  utterance.onend = () => {
+    window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+  };
+  utterance.onerror = () => {
+    window.dispatchEvent(new CustomEvent("companion-status-changed", { detail: "idle" }));
+  };
+
   window.speechSynthesis.speak(utterance);
 }
 
